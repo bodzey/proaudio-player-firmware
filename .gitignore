@@ -1,0 +1,9 @@
+output/
+dl/
+.cache/
+*.img
+*.img.xz
+*.raucb
+*.tar
+*.tar.gz
+*.tar.xz
