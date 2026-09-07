@@ -33,6 +33,7 @@ config BR2_PACKAGE_PROAUDIO_PLAYER
 	select BR2_PACKAGE_MPD_VORBIS
 	select BR2_PACKAGE_MPD_OPUS
 	select BR2_PACKAGE_MPD_CURL
+	select BR2_PACKAGE_MPD_FFMPEG
 	select BR2_PACKAGE_MPD_MPC
 	help
 	  ProAudio Player application, priority alert controller, web UI,
