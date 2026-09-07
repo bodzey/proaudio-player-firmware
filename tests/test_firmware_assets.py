@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "br2-external/package/proaudio-player"
+SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
 
 
 def test_core_submodule_uses_protocol_relative_repository_url():
@@ -37,12 +38,33 @@ def test_required_time_sync_and_source_hash_enforcement_are_enabled():
         ).read_text(encoding="utf-8")
         assert "BR2_DOWNLOAD_FORCE_CHECK_HASHES=y" in defconfig
 
-    spotify_hash = (
-        ROOT
-        / "br2-external/package/proaudio-spotifyd/proaudio-spotifyd.hash"
-    ).read_text(encoding="utf-8")
-    assert "spotifyd-0.4.2.tar.gz" in spotify_hash
+    spotify_hash = (SPOTIFY_PACKAGE / "proaudio-spotifyd.hash").read_text(
+        encoding="utf-8"
+    )
+    assert "spotifyd-0.4.2.crate" in spotify_hash
+    assert "93f11b13d33be743aa23422db1c990d9de5997123fc8323eddc37cb3d5eb4f26" in spotify_hash
     assert "LICENSE" in spotify_hash
+
+
+def test_rpi4_target_satisfies_player_contract_and_uses_real_interface():
+    defconfig = (
+        ROOT / "br2-external/configs/proaudio_rpi4_64_defconfig"
+    ).read_text(encoding="utf-8")
+    assert "BR2_TOOLCHAIN_EXTERNAL_BOOTLIN_AARCH64_GLIBC_BLEEDING_EDGE=y" in defconfig
+    assert "BR2_TOOLCHAIN_EXTERNAL_BOOTLIN_AARCH64_GLIBC_STABLE=y" not in defconfig
+    assert 'BR2_SYSTEM_DHCP="end0"' in defconfig
+    assert "BR2_PACKAGE_PROAUDIO_PLAYER=y" in defconfig
+
+
+def test_spotifyd_uses_buildroot_cargo_source_not_upstream_prebuilt_binary():
+    makefile = (SPOTIFY_PACKAGE / "proaudio-spotifyd.mk").read_text(
+        encoding="utf-8"
+    )
+    assert "spotifyd-$(PROAUDIO_SPOTIFYD_VERSION).crate" in makefile
+    assert "https://static.crates.io/crates/spotifyd" in makefile
+    assert "$(eval $(cargo-package))" in makefile
+    assert "--no-default-features --features pulseaudio_backend" in makefile
+    assert "PROAUDIO_SPOTIFYD_EXTRACT_CMDS" in makefile
 
 
 def test_audio_bus_service_retries_if_hardware_is_late():
