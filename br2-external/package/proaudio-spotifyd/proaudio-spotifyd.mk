@@ -7,6 +7,9 @@
 PROAUDIO_SPOTIFYD_VERSION = 0.4.2
 PROAUDIO_SPOTIFYD_SOURCE = spotifyd-$(PROAUDIO_SPOTIFYD_VERSION).crate
 PROAUDIO_SPOTIFYD_SITE = https://static.crates.io/crates/spotifyd
+# Keep Buildroot's Cargo post-processing base name identical to the
+# previously verified spotifyd-0.4.2 vendored archive.
+PROAUDIO_SPOTIFYD_DL_SUBDIR = spotifyd
 PROAUDIO_SPOTIFYD_LICENSE = GPL-3.0-only
 PROAUDIO_SPOTIFYD_LICENSE_FILES = LICENSE
 PROAUDIO_SPOTIFYD_DEPENDENCIES = host-pkgconf openssl pulseaudio
