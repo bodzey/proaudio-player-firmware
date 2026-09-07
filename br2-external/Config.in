@@ -1,1 +1,5 @@
-# ProAudio Player Buildroot options
+menu "ProAudio Player"
+
+source "$BR2_EXTERNAL_PROAUDIO_PATH/package/proaudio-player/Config.in"
+
+endmenu

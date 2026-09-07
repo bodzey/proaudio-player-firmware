@@ -1,0 +1,10 @@
+config BR2_PACKAGE_PROAUDIO_PLAYER
+	bool "proaudio-player"
+	select BR2_PACKAGE_PYTHON3
+	select BR2_PACKAGE_PYTHON3_SSL
+	select BR2_PACKAGE_CA_CERTIFICATES
+	select BR2_PACKAGE_PYTHON_AIOHTTP
+	select BR2_PACKAGE_PYTHON_PYYAML
+	select BR2_PACKAGE_PYTHON_SERIAL
+	help
+	  ProAudio Player application and alert controller.
