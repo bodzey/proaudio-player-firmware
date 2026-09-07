@@ -14,6 +14,7 @@ config BR2_PACKAGE_PROAUDIO_PLAYER
 	depends on !BR2_STATIC_LIBS
 	select BR2_PACKAGE_BASH
 	select BR2_PACKAGE_CA_CERTIFICATES
+	select BR2_PACKAGE_SYSTEMD_TIMESYNCD
 	select BR2_PACKAGE_PYTHON3
 	select BR2_PACKAGE_PYTHON3_SSL
 	select BR2_PACKAGE_PYTHON_AIOHTTP
@@ -36,8 +37,8 @@ config BR2_PACKAGE_PROAUDIO_PLAYER
 	select BR2_PACKAGE_MPD_FFMPEG
 	select BR2_PACKAGE_MPD_MPC
 	help
-	  ProAudio Player application, priority alert controller, web UI,
-	  PipeWire audio buses and local MPD source.
+	  ProAudio Player application, alert controller and web UI.
+	  Includes PipeWire audio buses and a local MPD source.
 
 if BR2_PACKAGE_PROAUDIO_PLAYER
 

@@ -3,4 +3,4 @@
 	url = https://gitlab.com/buildroot.org/buildroot.git
 [submodule "sources/proaudio-player"]
 	path = sources/proaudio-player
-	url = git@github.com:bodzey/proaudio_player.git
+	url = ../proaudio_player.git

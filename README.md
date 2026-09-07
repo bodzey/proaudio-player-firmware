@@ -15,17 +15,19 @@ proaudio_player
             ├───────────────┐
             ▼               ▼
 proaudio_player_docker   proaudio-player-firmware
-Docker/amd64 dev         Buildroot/Raspberry Pi runtime
+Docker dev/test          Buildroot/Raspberry Pi runtime
 ```
 
 This repository contains only the embedded/firmware integration layer. It does not contain the application implementation and it does not contain Docker development files.
 
 The player source is pinned as a Git submodule under `sources/proaudio-player/`. Buildroot packages install and integrate that source into the Raspberry Pi root filesystem.
 
+The relative core submodule URL follows the protocol used to clone this repository, so both SSH and HTTPS clones work without rewriting `.gitmodules`.
+
 Current integration revision:
 
 ```text
-669df8465929fb1b582aa6cb3ffa3a8fd8128e72
+616c41cca43ee9d7cf44483bd2bad5347015b775
 ```
 
 ## Targets
@@ -57,7 +59,7 @@ AirPlay, DLNA and Spotify Connect are enabled by default and can be disabled thr
 
 PulseAudio is present only for `libpulse` and client tools such as `pactl`; its daemon is not enabled. `pipewire-pulse` is the PulseAudio-compatible server.
 
-The firmware uses system-wide PipeWire services. ProAudio application services run as the dedicated `proaudio-player` user, which belongs to the `pipewire`, `audio` and `dialout` groups. The services connect to the system PipeWire Pulse socket at `/run/pulse/native`.
+The firmware uses system-wide PipeWire services. ProAudio application services run as the dedicated `proaudio-player` user, which belongs to the `pipewire`, `audio` and `dialout` groups. The services connect to the system PipeWire Pulse socket at `/run/pulse/native`. `systemd-timesyncd` synchronizes the clock after boot, which is required for HTTPS API requests and the daily minute-of-silence schedule.
 
 The audio buses are created only by the shared `audio-buses.sh` from the player source. Firmware does not duplicate the bus creation logic. The script detects the physical audio output and creates the music and priority-alert loopbacks.
 
@@ -116,7 +118,7 @@ This keeps Buildroot-specific logic out of the player repository while still all
 
 ## Announcement media
 
-The target firmware intentionally does not install `espeak-ng`, compiler toolchains or other development/build dependencies. Standard announcement media should be generated/provisioned by a build or deployment environment rather than synthesized on the Raspberry Pi at runtime.
+The target firmware intentionally does not install `espeak-ng`, FFmpeg, compiler toolchains or other media-generation dependencies. Buildroot copies the ready-to-use standard announcement media from the pinned core into the image. The Raspberry Pi never synthesizes these files at runtime.
 
 The runtime files are expected at:
 
@@ -125,6 +127,8 @@ The runtime files are expected at:
 /var/lib/proaudio-player-alert/media/alarm_end.mp3
 /var/lib/proaudio-player-alert/media/minute_silence.mp3
 ```
+
+Replacing these files in a persistent deployment remains supported; rebuilding the standard image always starts from the core defaults.
 
 ## Runtime data
 
