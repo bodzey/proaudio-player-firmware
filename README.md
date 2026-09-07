@@ -25,7 +25,7 @@ The player source is pinned as a Git submodule under `sources/proaudio-player/`.
 Current integration revision:
 
 ```text
-8c272572d4cc4bb58171cd8c8e6bfce627402577
+669df8465929fb1b582aa6cb3ffa3a8fd8128e72
 ```
 
 ## Targets
