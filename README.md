@@ -14,13 +14,19 @@ proaudio_player
             │
             ├───────────────┐
             ▼               ▼
-proaudio-player-docker   proaudio-player-firmware
+proaudio_player_docker   proaudio-player-firmware
 Docker/amd64 dev         Buildroot/Raspberry Pi runtime
 ```
 
 This repository contains only the embedded/firmware integration layer. It does not contain the application implementation and it does not contain Docker development files.
 
 The player source is pinned as a Git submodule under `sources/proaudio-player/`. Buildroot packages install and integrate that source into the Raspberry Pi root filesystem.
+
+Current integration revision:
+
+```text
+8c272572d4cc4bb58171cd8c8e6bfce627402577
+```
 
 ## Targets
 
