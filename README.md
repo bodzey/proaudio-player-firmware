@@ -1,31 +1,61 @@
 # ProAudio Player Firmware
 
-Buildroot-based firmware for ProAudio Player embedded devices.
+Buildroot-based firmware integration for ProAudio Player embedded devices.
+
+The primary hardware target is Raspberry Pi 4 Model B. Raspberry Pi 400 and Compute Module 4 use the same BCM2711/AArch64 Buildroot base and can remain compatible targets. QEMU AArch64 is kept only as a fast smoke-test environment for firmware integration.
+
+## Repository model
+
+ProAudio Player is split into independent layers:
+
+```text
+proaudio_player
+    core application and shared player runtime resources
+            │
+            ├───────────────┐
+            ▼               ▼
+proaudio-player-docker   proaudio-player-firmware
+Docker/amd64 dev         Buildroot/Raspberry Pi runtime
+```
+
+This repository contains only the embedded/firmware integration layer. It does not contain the application implementation and it does not contain Docker development files.
+
+The player source is pinned as a Git submodule under `sources/proaudio-player/`. Buildroot packages install and integrate that source into the Raspberry Pi root filesystem.
 
 ## Targets
 
-- QEMU AArch64: `proaudio_qemu_aarch64_defconfig`
-- Raspberry Pi 4 / Raspberry Pi 400 / Compute Module 4: `proaudio_rpi4_64_defconfig`
+Primary target:
 
-The repository pins both Buildroot and the ProAudio Player application as Git submodules. Docker remains the development/integration-test environment of the application repository; Docker is not installed in the firmware.
+- Raspberry Pi 4 Model B: `proaudio_rpi4_64_defconfig`
+
+Compatible BCM2711 targets:
+
+- Raspberry Pi 400
+- Compute Module 4
+
+Integration smoke test:
+
+- QEMU AArch64: `proaudio_qemu_aarch64_defconfig`
 
 ## Repository layout
 
 ```text
-upstream/buildroot/          pinned Buildroot
-sources/proaudio-player/     pinned ProAudio Player source
-br2-external/                board and package integration
+upstream/buildroot/          pinned Buildroot source
+sources/proaudio-player/     pinned ProAudio Player core
+br2-external/                Buildroot board/package integration
 ```
 
-`BR2_PACKAGE_PROAUDIO_PLAYER=y` is the product-level Buildroot switch. The package selects the Python runtime, PipeWire/WirePlumber/Pulse compatibility libraries, MPV, MPD/MPC and the enabled network audio sources. AirPlay, DLNA and Spotify Connect are enabled by default and can be disabled through the ProAudio Player menu.
+`BR2_PACKAGE_PROAUDIO_PLAYER=y` is the product-level Buildroot switch. The package selects the runtime dependencies required by the player: Python, PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio sources.
 
-PulseAudio is present only for `libpulse` and client tools such as `pactl`; the PulseAudio daemon is not selected. `pipewire-pulse` is the only Pulse server.
+AirPlay, DLNA and Spotify Connect are enabled by default and can be disabled through the ProAudio Player Buildroot menu.
 
-The firmware uses system-wide PipeWire services. ProAudio application services run as the dedicated `proaudio-player` user, which is a member of the `pipewire`, `audio` and `dialout` groups. They connect to the system PipeWire Pulse socket at `/run/pulse/native`.
+PulseAudio is present only for `libpulse` and client tools such as `pactl`; its daemon is not enabled. `pipewire-pulse` is the PulseAudio-compatible server.
 
-The audio buses are created only by `audio-buses.sh`. The former static `pulse.cmd` bus definition was removed to avoid duplicate null sinks. The script also detects the physical output and creates both loopbacks to it.
+The firmware uses system-wide PipeWire services. ProAudio application services run as the dedicated `proaudio-player` user, which belongs to the `pipewire`, `audio` and `dialout` groups. The services connect to the system PipeWire Pulse socket at `/run/pulse/native`.
 
-## Build
+The audio buses are created only by the shared `audio-buses.sh` from the player source. Firmware does not duplicate the bus creation logic. The script detects the physical audio output and creates the music and priority-alert loopbacks.
+
+## Build for Raspberry Pi 4 Model B
 
 Initialize the pinned sources:
 
@@ -33,50 +63,73 @@ Initialize the pinned sources:
 git submodule update --init --recursive
 ```
 
-QEMU AArch64:
+Load the Raspberry Pi configuration:
+
+```bash
+make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio_rpi4_64_defconfig
+```
+
+Build the firmware:
+
+```bash
+make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
+```
+
+The SD-card image is produced under:
+
+```text
+upstream/buildroot/output/images/
+```
+
+## QEMU smoke test
+
+QEMU is not the production platform. It is available to verify the Buildroot userspace/package integration without writing an SD card:
 
 ```bash
 make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio_qemu_aarch64_defconfig
 make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
 ```
 
-Raspberry Pi 4 / CM4:
+## Player source integration
 
-```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio_rpi4_64_defconfig
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
-```
+Production/reproducible firmware builds use the exact commit pinned by the `sources/proaudio-player` submodule.
 
-The Raspberry Pi SD-card image is produced in `upstream/buildroot/output/images/` by the upstream Raspberry Pi post-image script.
-
-## Local application development
-
-The normal firmware build uses the pinned `sources/proaudio-player` submodule. For a temporary local checkout, use Buildroot's override mechanism in an output-local `local.mk`, for example:
+For temporary local development, Buildroot can override that source tree with an output-local `local.mk`:
 
 ```make
 PROAUDIO_PLAYER_OVERRIDE_SRCDIR = /path/to/proaudio_player
 ```
 
-Then rebuild the application and image:
+Then rebuild the package and image:
 
 ```bash
 make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio-player-rebuild all
 ```
 
+This keeps Buildroot-specific logic out of the player repository while still allowing rapid firmware testing of local player changes.
+
 ## Announcement media
 
-The source repository currently generates `alarm_start.mp3`, `alarm_end.mp3` and `minute_silence.mp3` with `espeak-ng` and FFmpeg in the Debian/Docker workflow. Those build tools are intentionally not installed in the embedded target.
+The target firmware intentionally does not install `espeak-ng`, compiler toolchains or other development/build dependencies. Standard announcement media should be generated/provisioned by a build or deployment environment rather than synthesized on the Raspberry Pi at runtime.
 
-Until the generated media files are committed or supplied by a firmware provisioning step, copy the three files to:
+The runtime files are expected at:
 
 ```text
-/var/lib/proaudio-player-alert/media/
+/var/lib/proaudio-player-alert/media/alarm_start.mp3
+/var/lib/proaudio-player-alert/media/alarm_end.mp3
+/var/lib/proaudio-player-alert/media/minute_silence.mp3
 ```
 
-The alert service contains `ConditionPathExists` checks and therefore stays inactive rather than entering a restart loop when the media have not yet been provisioned.
+## Runtime data
 
-## Runtime configuration
+Application configuration is installed under `/etc/proaudio-player-alert/`.
 
-Application configuration is installed under `/etc/proaudio-player-alert/`. Persistent application/MPD state is kept under `/var/lib/proaudio-player-alert/`, Spotify state under `/var/lib/proaudio-player/`, and the local music library under `/srv/music`.
+Persistent runtime locations are:
 
-For the current writable ext4 images these locations persist normally. A future read-only/A-B firmware layout should mount a dedicated persistent data partition over the relevant `/var/lib` and music paths.
+```text
+/var/lib/proaudio-player-alert/   player/alert and MPD state
+/var/lib/proaudio-player/         Spotify state
+/srv/music/                       local music library
+```
+
+The current writable ext4 image persists these paths normally. A later read-only/A-B firmware design should mount a dedicated persistent data partition over the relevant state and music paths.
