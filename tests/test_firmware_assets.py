@@ -56,12 +56,13 @@ def test_rpi4_target_satisfies_player_contract_and_uses_real_interface():
     assert "BR2_PACKAGE_PROAUDIO_PLAYER=y" in defconfig
 
 
-def test_spotifyd_uses_buildroot_cargo_source_not_upstream_prebuilt_binary():
+def test_spotifyd_uses_verified_buildroot_cargo_source():
     makefile = (SPOTIFY_PACKAGE / "proaudio-spotifyd.mk").read_text(
         encoding="utf-8"
     )
     assert "spotifyd-$(PROAUDIO_SPOTIFYD_VERSION).crate" in makefile
     assert "https://static.crates.io/crates/spotifyd" in makefile
+    assert "PROAUDIO_SPOTIFYD_DL_SUBDIR = spotifyd" in makefile
     assert "$(eval $(cargo-package))" in makefile
     assert "--no-default-features --features pulseaudio_backend" in makefile
     assert "PROAUDIO_SPOTIFYD_EXTRACT_CMDS" in makefile
