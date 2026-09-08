@@ -1,5 +1,5 @@
-start_file=start4.elf
-fixup_file=fixup4.dat
+start_file=start4cd.elf
+fixup_file=fixup4cd.dat
 kernel=Image
 arm_64bit=1
 
