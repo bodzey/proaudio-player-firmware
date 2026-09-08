@@ -16,6 +16,7 @@
 # CONFIG_USB_HIDDEV is not set
 
 # GPIO character-device API for the physical setup button.
+CONFIG_GPIOLIB=y
 CONFIG_GPIO_CDEV=y
 
 # Raspberry Pi 4 Model B onboard Wi-Fi (BCM43455 over SDIO).
