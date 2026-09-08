@@ -15,13 +15,21 @@
 # CONFIG_USB_HID is not set
 # CONFIG_USB_HIDDEV is not set
 
-# Raspberry Pi 4 Model B USB host controller and mass-storage only.
+# Raspberry Pi 4 Model B USB host controller.
 CONFIG_USB=y
 CONFIG_USB_XHCI_HCD=y
+
+# USB mass storage for flash drives and external disks.
 CONFIG_SCSI=y
 CONFIG_BLK_DEV_SD=y
 CONFIG_USB_STORAGE=y
 CONFIG_USB_UAS=y
+
+# USB Audio Class output is required during development and remains supported.
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_PCM=y
+CONFIG_SND_USB_AUDIO=y
 
 # Common removable/external-disk filesystems.
 CONFIG_EXT4_FS=y
@@ -44,8 +52,7 @@ CONFIG_NTFS3_FS=m
 # CONFIG_USB_DWC3 is not set
 # CONFIG_USB_GADGET is not set
 
-# No USB audio/MIDI. Player audio is expected from non-USB hardware (for example I2S DAC).
-# CONFIG_SND_USB_AUDIO is not set
+# Optional/specialized USB audio drivers are not needed; standard UAC uses SND_USB_AUDIO.
 # CONFIG_SND_USB_UA101 is not set
 # CONFIG_SND_USB_CAIAQ is not set
 # CONFIG_SND_USB_6FIRE is not set
