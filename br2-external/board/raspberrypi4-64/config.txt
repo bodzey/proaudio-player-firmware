@@ -16,8 +16,9 @@ max_framebuffers=0
 disable_fw_kms_setup=1
 gpu_mem=16
 
-# Disable built-in analogue/HDMI audio. External audio is expected via I2S/DAC hardware.
-dtparam=audio=off
+# Keep the Raspberry Pi 4 analogue 3.5 mm audio output available.
+# HDMI video/audio remain disabled by the HDMI settings above.
+dtparam=audio=on
 
 # Keep UART available as the local recovery/debug console.
 enable_uart=1
