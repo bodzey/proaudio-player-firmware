@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+case "${1:-}" in
+    setup)
+        exec systemctl kill --kill-who=main --signal=SIGUSR1 proaudio-networkd.service
+        ;;
+    status)
+        exec systemctl status proaudio-networkd.service NetworkManager.service --no-pager
+        ;;
+    logs)
+        exec journalctl -u proaudio-networkd.service -n "${2:-100}" --no-pager
+        ;;
+    wifi)
+        exec nmcli -f DEVICE,TYPE,STATE,CONNECTION device status
+        ;;
+    connections)
+        exec nmcli connection show
+        ;;
+    *)
+        echo "Usage: $0 {setup|status|logs [lines]|wifi|connections}" >&2
+        exit 2
+        ;;
+esac

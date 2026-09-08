@@ -1,0 +1,16 @@
+[Unit]
+Description=ProAudio Player Wi-Fi provisioning
+After=dbus.service NetworkManager.service systemd-udevd.service
+Requires=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/proaudio-networkd
+Restart=always
+RestartSec=3
+KillMode=mixed
+TimeoutStopSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
