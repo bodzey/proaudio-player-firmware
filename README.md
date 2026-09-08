@@ -32,30 +32,76 @@ Display/video:
 - minimal GPU memory allocation;
 - UART remains available for recovery/debugging.
 
-USB host ports are intentionally restricted to storage use:
+Audio/output:
 
-- USB mass storage and UAS are enabled;
+- Raspberry Pi 4 analogue 3.5 mm audio is enabled;
+- standard USB Audio Class devices are enabled;
+- HDMI audio remains unavailable because HDMI output is disabled;
+- an I2S DAC/HAT can be added later without changing the player core.
+
+USB host ports are restricted to the device classes required by the appliance:
+
+- USB Audio Class is allowed;
+- USB mass storage and UAS are allowed;
 - flash drives and external disks are supported;
 - ext4, FAT/VFAT, exFAT and NTFS3 support is retained;
 - keyboards, mice, joysticks and HID are disabled;
-- USB audio/MIDI is disabled;
 - USB serial/RS-232 adapters are disabled;
 - USB network adapters are disabled;
 - USB printers, test/instrument interfaces, USB/IP and gadget mode are disabled.
-
-The player audio output for this hardware profile is therefore expected to use non-USB hardware, for example an I2S DAC/HAT. The exact DAC overlay can be added once the production DAC is selected.
 
 The relevant platform files are:
 
 ```text
 br2-external/board/raspberrypi4-64/config.txt
-br2-external/board/raspberrypi4-64/linux-headless-storage-only.fragment
+br2-external/board/raspberrypi4-64/linux-headless-usb.fragment
+br2-external/board/raspberrypi4-64/rootfs-overlay/etc/udev/rules.d/10-proaudio-usb-allowlist.rules
 br2-external/configs/proaudio_rpi4_64_defconfig
+```
+
+## Wi-Fi provisioning
+
+Raspberry Pi 4 Model B uses its onboard Broadcom Wi-Fi through NetworkManager. Ethernet `end0` remains outside NetworkManager and continues to use the normal systemd-networkd DHCP path.
+
+`proaudio-networkd` implements headless provisioning:
+
+1. On first boot, if no `proaudio-wifi` profile exists, the device automatically enters Setup Mode.
+2. It creates a WPA2 setup access point named `ProAudio-XXXX`, where `XXXX` is derived from the device serial/machine ID.
+3. The prototype setup password is `proaudio-setup` and can be changed in `/etc/proaudio-networkd.conf`.
+4. The setup network is isolated and does not route Internet/LAN traffic.
+5. DHCP and captive DNS direct the client to the provisioning portal at `http://192.168.4.1/`.
+6. The portal scans nearby Wi-Fi networks, accepts SSID/password and attempts the connection.
+7. On success the credentials are saved as the NetworkManager profile `proaudio-wifi` and the setup AP is removed.
+8. On failure the setup AP returns and the portal allows another attempt.
+
+A physical recovery/setup button is supported on BCM GPIO26:
+
+```text
+Raspberry Pi physical pin 37 (GPIO26) ---- momentary button ---- physical pin 39 (GND)
+```
+
+Holding the button for 5 seconds enters Setup Mode. No keyboard or display is required. GPIO is handled through the modern character-device API (`python-gpiod`), not deprecated sysfs GPIO.
+
+Setup Mode can also be requested from a shell:
+
+```bash
+proaudio-networkctl setup
+```
+
+Useful diagnostics:
+
+```bash
+proaudio-networkctl status
+proaudio-networkctl wifi
+proaudio-networkctl connections
+proaudio-networkctl logs 200
 ```
 
 ## Runtime architecture
 
-`BR2_PACKAGE_PROAUDIO_PLAYER=y` is the product-level Buildroot switch. It installs the pinned core and selects the player runtime: Python, PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio sources.
+`BR2_PACKAGE_PROAUDIO_PLAYER=y` installs the pinned core and selects the player runtime: Python, PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio sources.
+
+`BR2_PACKAGE_PROAUDIO_NETWORKD=y` is the Raspberry Pi provisioning layer. It owns Wi-Fi/AP switching, captive portal and the GPIO setup button; these platform-specific functions are intentionally kept outside `proaudio_player` core.
 
 AirPlay, DLNA and Spotify Connect are enabled by default. PulseAudio is used only for client/libpulse compatibility; `pipewire-pulse` is the audio server.
 
@@ -81,7 +127,7 @@ rm -rf upstream/buildroot/output
 rm -f upstream/buildroot/.config upstream/buildroot/.config.old
 ```
 
-Downloaded source archives may remain in `upstream/buildroot/dl`; they are not build state. If a completely cold build including fresh downloads is required, remove that directory as well.
+Downloaded source archives may remain in `upstream/buildroot/dl`; they are not build state.
 
 Load the Raspberry Pi 4 Model B configuration:
 
@@ -94,7 +140,7 @@ make -C upstream/buildroot \
 Build:
 
 ```bash
-make -C upstream/buildroot \
+make -j8 -C upstream/buildroot \
   BR2_EXTERNAL="$PWD/br2-external"
 ```
 
@@ -106,21 +152,14 @@ upstream/buildroot/output/images/
 
 ## Verifying the generated kernel configuration
 
-After the kernel has been configured during the build, verify the headless/USB restrictions with:
+After the kernel has been configured during the build:
 
 ```bash
-grep -E 'CONFIG_(DRM|FB|VT|INPUT|HID|USB_HID|SND_USB_AUDIO|USB_SERIAL|USB_NET_DRIVERS|USB_STORAGE|USB_UAS)=' \
+grep -E 'CONFIG_(DRM|FB|VT|INPUT|HID|USB_HID|SND_USB_AUDIO|SND_BCM2835|USB_SERIAL|USB_NET_DRIVERS|USB_STORAGE|USB_UAS|BRCMFMAC|GPIO_CDEV)=' \
   upstream/buildroot/output/build/linux-*/.config
 ```
 
-Expected functional state:
-
-```text
-CONFIG_USB_STORAGE=y
-CONFIG_USB_UAS=y
-```
-
-The display/input/USB non-storage options listed above should either be absent or appear as `# CONFIG_... is not set`.
+Expected functional state includes USB storage, USB audio, analogue Pi audio, Broadcom Wi-Fi and GPIO character-device support. Display/input and unwanted USB classes should remain disabled.
 
 ## QEMU smoke test
 
@@ -162,7 +201,10 @@ Runtime media paths:
 ## Runtime data
 
 ```text
-/etc/proaudio-player-alert/       configuration
+/etc/proaudio-player-alert/       player configuration
+/etc/proaudio-networkd.conf       Wi-Fi provisioning configuration
+/var/lib/NetworkManager/          saved NetworkManager state
+/etc/NetworkManager/system-connections/ saved Wi-Fi profiles
 /var/lib/proaudio-player-alert/   controller and MPD state
 /var/lib/proaudio-player/         Spotify state
 /srv/music/                       local music library
