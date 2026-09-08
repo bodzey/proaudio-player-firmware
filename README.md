@@ -66,8 +66,8 @@ Raspberry Pi 4 Model B uses its onboard Broadcom Wi-Fi through NetworkManager. E
 `proaudio-networkd` implements headless provisioning:
 
 1. On first boot, if no `proaudio-wifi` profile exists, the device automatically enters Setup Mode.
-2. It creates a WPA2 setup access point named `ProAudio-XXXX`, where `XXXX` is derived from the device serial/machine ID.
-3. The prototype setup password is `proaudio-setup` and can be changed in `/etc/proaudio-networkd.conf`.
+2. It creates an open setup access point named `ProAudio-Player-XXXX`, where `XXXX` is derived from the device serial/machine ID.
+3. The setup access point intentionally has no Wi-Fi password.
 4. The setup network is isolated and does not route Internet/LAN traffic.
 5. DHCP and captive DNS direct the client to the provisioning portal at `http://192.168.4.1/`.
 6. The portal scans nearby Wi-Fi networks, accepts SSID/password and attempts the connection.
