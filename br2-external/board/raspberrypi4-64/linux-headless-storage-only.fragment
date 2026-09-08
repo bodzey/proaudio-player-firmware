@@ -1,0 +1,56 @@
+# Headless appliance: no display, framebuffer, local VT or media/video stack.
+# CONFIG_VT is not set
+# CONFIG_DRM is not set
+# CONFIG_FB is not set
+# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
+# CONFIG_LOGO is not set
+# CONFIG_MEDIA_SUPPORT is not set
+
+# No local input devices. This removes keyboard, mouse, joystick and HID support.
+# CONFIG_INPUT is not set
+# CONFIG_HID_SUPPORT is not set
+# CONFIG_HID is not set
+# CONFIG_HIDRAW is not set
+# CONFIG_UHID is not set
+# CONFIG_USB_HID is not set
+# CONFIG_USB_HIDDEV is not set
+
+# Raspberry Pi 4 Model B USB host controller and mass-storage only.
+CONFIG_USB=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_SCSI=y
+CONFIG_BLK_DEV_SD=y
+CONFIG_USB_STORAGE=y
+CONFIG_USB_UAS=y
+
+# Common removable/external-disk filesystems.
+CONFIG_EXT4_FS=y
+CONFIG_MSDOS_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_EXFAT_FS=m
+CONFIG_NTFS3_FS=m
+
+# Do not support other USB device classes.
+# CONFIG_USB_MON is not set
+# CONFIG_USB_NET_DRIVERS is not set
+# CONFIG_USB_ACM is not set
+# CONFIG_USB_WDM is not set
+# CONFIG_USB_PRINTER is not set
+# CONFIG_USB_TMC is not set
+# CONFIG_USB_SERIAL is not set
+# CONFIG_USBIP_CORE is not set
+# CONFIG_USB_DWCOTG is not set
+# CONFIG_USB_DWC2 is not set
+# CONFIG_USB_DWC3 is not set
+# CONFIG_USB_GADGET is not set
+
+# No USB audio/MIDI. Player audio is expected from non-USB hardware (for example I2S DAC).
+# CONFIG_SND_USB_AUDIO is not set
+# CONFIG_SND_USB_UA101 is not set
+# CONFIG_SND_USB_CAIAQ is not set
+# CONFIG_SND_USB_6FIRE is not set
+# CONFIG_SND_USB_HIFACE is not set
+# CONFIG_SND_USB_TONEPORT is not set
+
+# No USB Bluetooth transport.
+# CONFIG_BT_HCIBTUSB is not set
