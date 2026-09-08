@@ -1,6 +1,7 @@
 [Unit]
 Description=ProAudio Player web interface
-After=proaudio-player-buses.service proaudio-player-mpd.service
+After=dbus.service proaudio-player-buses.service proaudio-player-mpd.service
+Wants=dbus.service
 Requires=proaudio-player-buses.service proaudio-player-mpd.service
 
 [Service]
