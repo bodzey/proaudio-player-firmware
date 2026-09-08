@@ -1,86 +1,101 @@
 # ProAudio Player Firmware
 
-Buildroot-based firmware integration for ProAudio Player embedded devices.
+Buildroot firmware integration for ProAudio Player.
 
-The primary hardware target is Raspberry Pi 4 Model B. Raspberry Pi 400 and Compute Module 4 use the same BCM2711/AArch64 Buildroot base and can remain compatible targets. QEMU AArch64 is kept only as a fast smoke-test environment for firmware integration.
+The production hardware target of this repository is currently Raspberry Pi 4 Model B (BCM2711, AArch64). QEMU AArch64 is retained only as an integration smoke-test target.
 
 ## Repository model
 
-ProAudio Player is split into independent layers:
-
 ```text
 proaudio_player
-    core application and shared player runtime resources
+    platform-independent player core
             │
-            ├───────────────┐
-            ▼               ▼
-proaudio_player_docker   proaudio-player-firmware
-Docker dev/test          Buildroot/Raspberry Pi runtime
+            ├────────────────────┐
+            ▼                    ▼
+proaudio_player_docker     proaudio-player-firmware
+Docker dev/test            Buildroot / Raspberry Pi 4 Model B
 ```
 
-This repository contains only the embedded/firmware integration layer. It does not contain the application implementation and it does not contain Docker development files.
+This repository contains the embedded platform layer only. The player implementation is pinned as the `sources/proaudio-player` Git submodule.
 
-The player source is pinned as a Git submodule under `sources/proaudio-player/`. Buildroot packages install and integrate that source into the Raspberry Pi root filesystem.
+## Raspberry Pi 4 Model B hardware profile
 
-The relative core submodule URL follows the protocol used to clone this repository, so both SSH and HTTPS clones work without rewriting `.gitmodules`.
+`proaudio_rpi4_64_defconfig` is an intentionally headless appliance profile.
 
-Current integration revision:
+Display/video:
+
+- no HDMI output;
+- no firmware/KMS framebuffer setup;
+- no DRM or framebuffer kernel stack;
+- no virtual terminal/local graphical console;
+- no camera/media kernel stack;
+- minimal GPU memory allocation;
+- UART remains available for recovery/debugging.
+
+USB host ports are intentionally restricted to storage use:
+
+- USB mass storage and UAS are enabled;
+- flash drives and external disks are supported;
+- ext4, FAT/VFAT, exFAT and NTFS3 support is retained;
+- keyboards, mice, joysticks and HID are disabled;
+- USB audio/MIDI is disabled;
+- USB serial/RS-232 adapters are disabled;
+- USB network adapters are disabled;
+- USB printers, test/instrument interfaces, USB/IP and gadget mode are disabled.
+
+The player audio output for this hardware profile is therefore expected to use non-USB hardware, for example an I2S DAC/HAT. The exact DAC overlay can be added once the production DAC is selected.
+
+The relevant platform files are:
 
 ```text
-616c41cca43ee9d7cf44483bd2bad5347015b775
+br2-external/board/raspberrypi4-64/config.txt
+br2-external/board/raspberrypi4-64/linux-headless-storage-only.fragment
+br2-external/configs/proaudio_rpi4_64_defconfig
 ```
 
-## Targets
+## Runtime architecture
 
-Primary target:
+`BR2_PACKAGE_PROAUDIO_PLAYER=y` is the product-level Buildroot switch. It installs the pinned core and selects the player runtime: Python, PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio sources.
 
-- Raspberry Pi 4 Model B: `proaudio_rpi4_64_defconfig`
+AirPlay, DLNA and Spotify Connect are enabled by default. PulseAudio is used only for client/libpulse compatibility; `pipewire-pulse` is the audio server.
 
-Compatible BCM2711 targets:
+The shared `audio-buses.sh` comes from the player core and remains the single implementation of the music and alert buses.
 
-- Raspberry Pi 400
-- Compute Module 4
+Application services run system-wide under the dedicated `proaudio-player` account. `systemd-timesyncd` provides clock synchronization for HTTPS API access and scheduled events.
 
-Integration smoke test:
+## Completely clean Raspberry Pi 4 build
 
-- QEMU AArch64: `proaudio_qemu_aarch64_defconfig`
-
-## Repository layout
-
-```text
-upstream/buildroot/          pinned Buildroot source
-sources/proaudio-player/     pinned ProAudio Player core
-br2-external/                Buildroot board/package integration
-```
-
-`BR2_PACKAGE_PROAUDIO_PLAYER=y` is the product-level Buildroot switch. The package selects the runtime dependencies required by the player: Python, PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio sources.
-
-AirPlay, DLNA and Spotify Connect are enabled by default and can be disabled through the ProAudio Player Buildroot menu.
-
-PulseAudio is present only for `libpulse` and client tools such as `pactl`; its daemon is not enabled. `pipewire-pulse` is the PulseAudio-compatible server.
-
-The firmware uses system-wide PipeWire services. ProAudio application services run as the dedicated `proaudio-player` user, which belongs to the `pipewire`, `audio` and `dialout` groups. The services connect to the system PipeWire Pulse socket at `/run/pulse/native`. `systemd-timesyncd` synchronizes the clock after boot, which is required for HTTPS API requests and the daily minute-of-silence schedule.
-
-The audio buses are created only by the shared `audio-buses.sh` from the player source. Firmware does not duplicate the bus creation logic. The script detects the physical audio output and creates the music and priority-alert loopbacks.
-
-## Build for Raspberry Pi 4 Model B
-
-Initialize the pinned sources:
+Synchronize all repositories first:
 
 ```bash
+git switch main
+git pull
+git submodule sync --recursive
 git submodule update --init --recursive
 ```
 
-Load the Raspberry Pi configuration:
+Remove all generated Buildroot state and the previous configuration:
 
 ```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio_rpi4_64_defconfig
+rm -rf upstream/buildroot/output
+rm -f upstream/buildroot/.config upstream/buildroot/.config.old
 ```
 
-Build the firmware:
+Downloaded source archives may remain in `upstream/buildroot/dl`; they are not build state. If a completely cold build including fresh downloads is required, remove that directory as well.
+
+Load the Raspberry Pi 4 Model B configuration:
 
 ```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
+make -C upstream/buildroot \
+  BR2_EXTERNAL="$PWD/br2-external" \
+  proaudio_rpi4_64_defconfig
+```
+
+Build:
+
+```bash
+make -C upstream/buildroot \
+  BR2_EXTERNAL="$PWD/br2-external"
 ```
 
 The SD-card image is produced under:
@@ -89,9 +104,27 @@ The SD-card image is produced under:
 upstream/buildroot/output/images/
 ```
 
+## Verifying the generated kernel configuration
+
+After the kernel has been configured during the build, verify the headless/USB restrictions with:
+
+```bash
+grep -E 'CONFIG_(DRM|FB|VT|INPUT|HID|USB_HID|SND_USB_AUDIO|USB_SERIAL|USB_NET_DRIVERS|USB_STORAGE|USB_UAS)=' \
+  upstream/buildroot/output/build/linux-*/.config
+```
+
+Expected functional state:
+
+```text
+CONFIG_USB_STORAGE=y
+CONFIG_USB_UAS=y
+```
+
+The display/input/USB non-storage options listed above should either be absent or appear as `# CONFIG_... is not set`.
+
 ## QEMU smoke test
 
-QEMU is not the production platform. It is available to verify the Buildroot userspace/package integration without writing an SD card:
+QEMU is not the production hardware target:
 
 ```bash
 make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio_qemu_aarch64_defconfig
@@ -100,27 +133,25 @@ make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
 
 ## Player source integration
 
-Production/reproducible firmware builds use the exact commit pinned by the `sources/proaudio-player` submodule.
+Production builds use the exact revision pinned by `sources/proaudio-player`.
 
-For temporary local development, Buildroot can override that source tree with an output-local `local.mk`:
+For a temporary local source override:
 
 ```make
 PROAUDIO_PLAYER_OVERRIDE_SRCDIR = /path/to/proaudio_player
 ```
 
-Then rebuild the package and image:
+and rebuild with:
 
 ```bash
 make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio-player-rebuild all
 ```
 
-This keeps Buildroot-specific logic out of the player repository while still allowing rapid firmware testing of local player changes.
-
 ## Announcement media
 
-The target firmware intentionally does not install `espeak-ng`, FFmpeg, compiler toolchains or other media-generation dependencies. Buildroot copies the ready-to-use standard announcement media from the pinned core into the image. The Raspberry Pi never synthesizes these files at runtime.
+The firmware does not install `espeak-ng`, FFmpeg or compiler toolchains for runtime media generation. Standard announcement MP3 files are copied from the pinned core during image creation.
 
-The runtime files are expected at:
+Runtime media paths:
 
 ```text
 /var/lib/proaudio-player-alert/media/alarm_start.mp3
@@ -128,18 +159,11 @@ The runtime files are expected at:
 /var/lib/proaudio-player-alert/media/minute_silence.mp3
 ```
 
-Replacing these files in a persistent deployment remains supported; rebuilding the standard image always starts from the core defaults.
-
 ## Runtime data
 
-Application configuration is installed under `/etc/proaudio-player-alert/`.
-
-Persistent runtime locations are:
-
 ```text
-/var/lib/proaudio-player-alert/   player/alert and MPD state
+/etc/proaudio-player-alert/       configuration
+/var/lib/proaudio-player-alert/   controller and MPD state
 /var/lib/proaudio-player/         Spotify state
 /srv/music/                       local music library
 ```
-
-The current writable ext4 image persists these paths normally. A later read-only/A-B firmware design should mount a dedicated persistent data partition over the relevant state and music paths.
