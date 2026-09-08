@@ -1,0 +1,1 @@
+Active player MPRIS integration is enabled in dev firmware.
