@@ -1,0 +1,30 @@
+config BR2_PACKAGE_PROAUDIO_NETWORKD
+	bool "proaudio-networkd Wi-Fi provisioning"
+	depends on BR2_INIT_SYSTEMD
+	depends on BR2_PACKAGE_HAS_UDEV
+	depends on BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10
+	depends on !BR2_PACKAGE_LIBGPIOD
+	select BR2_PACKAGE_NETWORK_MANAGER
+	select BR2_PACKAGE_NETWORK_MANAGER_CLI
+	select BR2_PACKAGE_WPA_SUPPLICANT
+	select BR2_PACKAGE_WPA_SUPPLICANT_NL80211
+	select BR2_PACKAGE_WPA_SUPPLICANT_AP_SUPPORT
+	select BR2_PACKAGE_WPA_SUPPLICANT_WPA3
+	select BR2_PACKAGE_WPA_SUPPLICANT_DBUS
+	select BR2_PACKAGE_DNSMASQ
+	select BR2_PACKAGE_DNSMASQ_DHCP
+	select BR2_PACKAGE_PYTHON3
+	select BR2_PACKAGE_PYTHON_GPIOD
+	select BR2_PACKAGE_BRCMFMAC_SDIO_FIRMWARE_RPI
+	select BR2_PACKAGE_BRCMFMAC_SDIO_FIRMWARE_RPI_WIFI
+	select BR2_PACKAGE_IW
+	select BR2_PACKAGE_WIRELESS_REGDB
+	help
+	  Headless Wi-Fi provisioning for ProAudio Player on Raspberry Pi 4.
+	  With no saved Wi-Fi profile it starts a temporary setup access point
+	  and captive portal. Holding BCM GPIO26 (physical pin 37) for five
+	  seconds re-enters setup mode; physical pin 39 is the adjacent GND.
+
+comment "proaudio-networkd needs systemd, udev and kernel headers >= 5.10"
+	depends on !BR2_INIT_SYSTEMD || !BR2_PACKAGE_HAS_UDEV || \
+		!BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10
