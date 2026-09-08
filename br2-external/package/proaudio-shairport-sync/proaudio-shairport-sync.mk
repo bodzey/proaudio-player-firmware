@@ -11,8 +11,10 @@ PROAUDIO_SHAIRPORT_SYNC_LICENSE = MIT, BSD-3-Clause
 PROAUDIO_SHAIRPORT_SYNC_LICENSE_FILES = LICENSES
 PROAUDIO_SHAIRPORT_SYNC_DEPENDENCIES = \
 	avahi \
+	dbus \
 	host-pkgconf \
 	libconfig \
+	libglib2 \
 	openssl \
 	popt \
 	pulseaudio
@@ -30,7 +32,7 @@ PROAUDIO_SHAIRPORT_SYNC_CONF_OPTS = \
 	--without-airplay-2 \
 	--without-convolution \
 	--without-dbus-interface \
-	--without-mpris-interface \
+	--with-mpris-interface \
 	--without-libdaemon \
 	--without-soxr \
 	--without-mqtt-client
