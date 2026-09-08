@@ -9,7 +9,7 @@ User=proaudio-player
 Group=proaudio-player
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
 Environment=PULSE_SERVER=unix:/run/pulse/native
-ExecStart=/usr/bin/proaudio-player-web --config /etc/proaudio-player-alert/config.yaml
+ExecStart=/usr/bin/proaudio-player-webui --config /etc/proaudio-player-alert/config.yaml
 Restart=always
 RestartSec=5
 NoNewPrivileges=yes

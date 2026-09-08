@@ -46,7 +46,7 @@ endef
 
 define PROAUDIO_PLAYER_PERMISSIONS
 	/etc/proaudio-player-alert/config.yaml f 640 root proaudio-player - - - - -
-	/etc/proaudio-player-alert/alerts-token f 640 root proaudio-player - - - - -
+	/etc/proaudio-player-alert/alerts-token f 600 proaudio-player proaudio-player - - - - -
 	/var/lib/proaudio-player-alert/media/alarm_start.mp3 f 644 proaudio-player proaudio-player - - - - -
 	/var/lib/proaudio-player-alert/media/alarm_end.mp3 f 644 proaudio-player proaudio-player - - - - -
 	/var/lib/proaudio-player-alert/media/minute_silence.mp3 f 644 proaudio-player proaudio-player - - - - -
@@ -64,7 +64,7 @@ define PROAUDIO_PLAYER_INSTALL_RUNTIME_LAYOUT
 		$(TARGET_DIR)/etc/proaudio-player-alert/shairport-sync.conf
 	$(INSTALL) -D -m 0644 $(@D)/config/spotifyd.conf \
 		$(TARGET_DIR)/etc/proaudio-player-alert/spotifyd.conf
-	$(INSTALL) -D -m 0644 /dev/null \
+	$(INSTALL) -D -m 0600 /dev/null \
 		$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token
 	$(INSTALL) -D -m 0644 \
 		$(@D)/config/wireplumber/51-proaudio-soft-mixer.conf \
@@ -128,8 +128,8 @@ define PROAUDIO_PLAYER_INSTALL_INIT_SYSTEMD
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-alert.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-alert.service
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-web.service \
-		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-web.service
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-webui.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-webui.service
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-mpd.service
@@ -138,8 +138,8 @@ define PROAUDIO_PLAYER_INSTALL_INIT_SYSTEMD
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-buses.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-alert.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-alert.service
-	ln -sf /usr/lib/systemd/system/proaudio-player-web.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-web.service
+	ln -sf /usr/lib/systemd/system/proaudio-player-webui.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-webui.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-mpd.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-mpd.service
 	$(PROAUDIO_PLAYER_INSTALL_AIRPLAY_SYSTEMD)
