@@ -1,5 +1,7 @@
 menu "ProAudio Player"
 
+source "$BR2_EXTERNAL_PROAUDIO_PATH/package/proaudio-shairport-sync/Config.in"
+source "$BR2_EXTERNAL_PROAUDIO_PATH/package/proaudio-spotifyd/Config.in"
 source "$BR2_EXTERNAL_PROAUDIO_PATH/package/proaudio-player/Config.in"
 
 endmenu

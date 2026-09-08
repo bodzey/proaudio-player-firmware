@@ -1,0 +1,19 @@
+[Unit]
+Description=ProAudio Player web interface
+After=proaudio-player-buses.service proaudio-player-mpd.service
+Requires=proaudio-player-buses.service proaudio-player-mpd.service
+
+[Service]
+Type=simple
+User=proaudio-player
+Group=proaudio-player
+Environment=XDG_RUNTIME_DIR=/run/proaudio-player
+Environment=PULSE_SERVER=unix:/run/pulse/native
+ExecStart=/usr/bin/proaudio-player-web --config /etc/proaudio-player-alert/config.yaml
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
