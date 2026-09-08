@@ -86,6 +86,9 @@ define PROAUDIO_PLAYER_INSTALL_RUNTIME_LAYOUT
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player.tmpfiles.conf \
 		$(TARGET_DIR)/usr/lib/tmpfiles.d/proaudio-player.conf
+	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpris.conf \
+		$(TARGET_DIR)/usr/share/dbus-1/system.d/proaudio-player-mpris.conf
 endef
 
 PROAUDIO_PLAYER_POST_INSTALL_TARGET_HOOKS += PROAUDIO_PLAYER_INSTALL_RUNTIME_LAYOUT
