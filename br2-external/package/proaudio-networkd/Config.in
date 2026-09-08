@@ -2,8 +2,15 @@ config BR2_PACKAGE_PROAUDIO_NETWORKD
 	bool "proaudio-networkd Wi-Fi provisioning"
 	depends on BR2_INIT_SYSTEMD
 	depends on BR2_PACKAGE_HAS_UDEV
+	depends on BR2_USE_MMU
+	depends on !BR2_STATIC_LIBS
+	depends on BR2_USE_WCHAR
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_TOOLCHAIN_GCC_AT_LEAST_4_9
 	depends on BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10
+	depends on BR2_TOOLCHAIN_USES_GLIBC || BR2_TOOLCHAIN_USES_MUSL
 	depends on !BR2_PACKAGE_LIBGPIOD
+	depends on !BR2_PACKAGE_LINUX_FIRMWARE_BRCM_BCM43XXX
 	select BR2_PACKAGE_NETWORK_MANAGER
 	select BR2_PACKAGE_NETWORK_MANAGER_CLI
 	select BR2_PACKAGE_WPA_SUPPLICANT
@@ -25,6 +32,10 @@ config BR2_PACKAGE_PROAUDIO_NETWORKD
 	  and captive portal. Holding BCM GPIO26 (physical pin 37) for five
 	  seconds re-enters setup mode; physical pin 39 is the adjacent GND.
 
-comment "proaudio-networkd needs systemd, udev and kernel headers >= 5.10"
-	depends on !BR2_INIT_SYSTEMD || !BR2_PACKAGE_HAS_UDEV || \
-		!BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10
+comment "proaudio-networkd requirements are not satisfied"
+	depends on !BR2_INIT_SYSTEMD || !BR2_PACKAGE_HAS_UDEV || !BR2_USE_MMU || \
+		BR2_STATIC_LIBS || !BR2_USE_WCHAR || !BR2_TOOLCHAIN_HAS_THREADS || \
+		!BR2_TOOLCHAIN_GCC_AT_LEAST_4_9 || \
+		!BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10 || \
+		!(BR2_TOOLCHAIN_USES_GLIBC || BR2_TOOLCHAIN_USES_MUSL) || \
+		BR2_PACKAGE_LIBGPIOD || BR2_PACKAGE_LINUX_FIRMWARE_BRCM_BCM43XXX
