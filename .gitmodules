@@ -4,4 +4,4 @@
 [submodule "sources/proaudio-player"]
 	path = sources/proaudio-player
 	url = ../proaudio_player.git
-	branch = main
+	branch = dev
