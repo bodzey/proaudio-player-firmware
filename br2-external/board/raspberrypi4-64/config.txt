@@ -1,0 +1,23 @@
+start_file=start4.elf
+fixup_file=fixup4.dat
+kernel=Image
+arm_64bit=1
+
+# Headless appliance: no local video output.
+disable_splash=1
+boot_delay=0
+disable_overscan=1
+display_auto_detect=0
+camera_auto_detect=0
+hdmi_ignore_hotplug=1
+enable_tvout=0
+max_framebuffers=0
+disable_fw_kms_setup=1
+gpu_mem=16
+
+# Disable built-in analogue/HDMI audio. External audio is expected via I2S/DAC hardware.
+dtparam=audio=off
+
+# Keep UART available as the local recovery/debug console.
+enable_uart=1
+dtoverlay=miniuart-bt
