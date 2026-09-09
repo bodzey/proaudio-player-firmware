@@ -171,11 +171,13 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 0644 $(@D)/systemd/proaudio-player-native.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-native.service
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
-	# Buildroot's stock MPD unit would compete with the ProAudio instance for
-	# port 6600 and the same runtime files. Keep only the explicitly configured
-	# ProAudio service in the appliance image.
+	# The stock MPD unit would compete with the ProAudio instance for port
+	# 6600. A systemd preset keeps the packaged unit disabled while retaining
+	# the Buildroot-managed MPD binary and libraries.
+	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/00-proaudio-player.preset \
+		$(TARGET_DIR)/usr/lib/systemd/system-preset/00-proaudio-player.preset
 	rm -f $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/mpd.service
-	ln -sf /dev/null $(TARGET_DIR)/etc/systemd/system/mpd.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-buses.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-buses.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-audio-output.path \
