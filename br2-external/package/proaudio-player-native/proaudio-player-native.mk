@@ -38,6 +38,30 @@ ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_SPOTIFY),y)
 PROAUDIO_PLAYER_NATIVE_DEPENDENCIES += proaudio-spotifyd
 endif
 
+# cargo-package normally vendors crates during Buildroot's download step. This
+# package intentionally uses SITE_METHOD=local so the firmware builds the exact
+# pinned submodule working tree; local packages do not go through that download
+# post-processing path. Vendor the locked dependency graph once in the synced
+# build directory so the standard cargo-package --offline build/install steps
+# remain reproducible and do not resolve dependencies on their own.
+define PROAUDIO_PLAYER_NATIVE_VENDOR_CRATES
+	if [ ! -d "$(@D)/VENDOR" ]; then \
+		cd "$(@D)" && \
+		CARGO_HOME="$(DL_DIR)/br-cargo-home" \
+		cargo vendor --locked VENDOR; \
+	fi
+	mkdir -p "$(@D)/.cargo"
+	printf '%s\n' \
+		'[source.crates-io]' \
+		'replace-with = "vendored-sources"' \
+		'' \
+		'[source.vendored-sources]' \
+		'directory = "VENDOR"' \
+		> "$(@D)/.cargo/config.toml"
+endef
+
+PROAUDIO_PLAYER_NATIVE_PRE_BUILD_HOOKS += PROAUDIO_PLAYER_NATIVE_VENDOR_CRATES
+
 define PROAUDIO_PLAYER_NATIVE_USERS
 	proaudio-player -1 proaudio-player -1 * /var/lib/proaudio-player /bin/false audio,pipewire ProAudio Player
 endef
