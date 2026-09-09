@@ -1,9 +1,14 @@
 [Unit]
 Description=Apply ProAudio Player audio output selection
-After=pipewire.service pipewire-pulse.service wireplumber.service
-Requires=pipewire.service pipewire-pulse.service wireplumber.service
+After=proaudio-player-buses.service
+Requires=proaudio-player-buses.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/systemctl restart proaudio-player-buses.service
-ExecStart=/bin/systemctl try-restart proaudio-player-mpd.service proaudio-player-spotifyd.service proaudio-player-shairport.service proaudio-player-dlna.service
+User=proaudio-player
+Group=proaudio-player
+Environment=XDG_RUNTIME_DIR=/run/proaudio-player
+Environment=PULSE_SERVER=unix:/run/pulse/native
+EnvironmentFile=-/etc/proaudio-player-alert/audio.env
+EnvironmentFile=-/var/lib/proaudio-player-alert/audio-output.env
+ExecStart=/usr/libexec/proaudio-player/audio-buses.sh switch
