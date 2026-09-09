@@ -1,6 +1,8 @@
 output/
 dl/
 .cache/
+.venv/
+**/__pycache__/
 *.img
 *.img.xz
 *.raucb

@@ -1,0 +1,12 @@
+# DEV firmware only: deliberately permissive SSH for bench diagnostics.
+Port 22
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+PermitRootLogin yes
+PermitEmptyPasswords yes
+PasswordAuthentication yes
+KbdInteractiveAuthentication no
+UsePAM no
+PrintMotd yes
+Subsystem sftp /usr/libexec/sftp-server

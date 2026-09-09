@@ -10,9 +10,9 @@ Group=proaudio-player
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
 Environment=PULSE_SERVER=unix:/run/pulse/native
 Environment=PULSE_SINK=proaudio_player_music
-ExecStart=/usr/bin/gmediarender -f "ProAudio Player" --gstout-audiosink=pulsesink
-Restart=on-failure
-RestartSec=3
+ExecStart=/usr/libexec/proaudio-player/dlna-renderer.sh
+Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target

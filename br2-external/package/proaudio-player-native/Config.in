@@ -1,24 +1,15 @@
-config BR2_PACKAGE_PROAUDIO_PLAYER
-	bool "proaudio-player"
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
+	bool "proaudio-player-native"
 	depends on BR2_INIT_SYSTEMD
-	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS
 	depends on BR2_USE_WCHAR
-	depends on BR2_TOOLCHAIN_HAS_THREADS_NPTL
+	depends on BR2_TOOLCHAIN_HAS_THREADS
 	depends on BR2_TOOLCHAIN_HAS_ATOMIC
-	depends on BR2_TOOLCHAIN_HAS_SYNC_4
-	depends on BR2_TOOLCHAIN_GCC_AT_LEAST_12
-	depends on BR2_HOST_GCC_AT_LEAST_10
-	depends on BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_6
-	depends on BR2_PACKAGE_FFMPEG_ARCH_SUPPORTS
 	depends on BR2_PACKAGE_PULSEAUDIO_HAS_ATOMIC
 	depends on !BR2_STATIC_LIBS
 	select BR2_PACKAGE_BASH
 	select BR2_PACKAGE_CA_CERTIFICATES
 	select BR2_PACKAGE_SYSTEMD_TIMESYNCD
-	select BR2_PACKAGE_PYTHON3
-	select BR2_PACKAGE_PYTHON3_SSL
-	select BR2_PACKAGE_PYTHON_AIOHTTP
-	select BR2_PACKAGE_PYTHON_PYYAML
 	select BR2_PACKAGE_ALSA_LIB
 	select BR2_PACKAGE_ALSA_UTILS
 	select BR2_PACKAGE_ALSA_UTILS_AMIXER
@@ -35,19 +26,20 @@ config BR2_PACKAGE_PROAUDIO_PLAYER
 	select BR2_PACKAGE_MPD_FFMPEG
 	select BR2_PACKAGE_MPD_MPC
 	help
-	  ProAudio Player application, alert controller and web UI.
-	  Includes PipeWire audio buses and a local MPD source.
+	  Native Rust control plane for ProAudio Player.
+	  Reuses the existing PipeWire/ALSA media path and protocol engines while
+	  replacing the Python alert, arbitration and web-control runtime.
 
-if BR2_PACKAGE_PROAUDIO_PLAYER
+if BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 
-config BR2_PACKAGE_PROAUDIO_PLAYER_AIRPLAY
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY
 	bool "AirPlay receiver"
 	default y
 	select BR2_PACKAGE_PROAUDIO_SHAIRPORT_SYNC
 	help
-	  Enable Shairport Sync with the PulseAudio backend and Avahi.
+	  Enable Shairport Sync with the PulseAudio backend and MPRIS support.
 
-config BR2_PACKAGE_PROAUDIO_PLAYER_DLNA
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA
 	bool "DLNA / UPnP renderer"
 	default y
 	select BR2_PACKAGE_GMRENDER_RESURRECT
@@ -58,21 +50,20 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_DLNA
 	help
 	  Enable the GStreamer-based DLNA/UPnP renderer.
 
-config BR2_PACKAGE_PROAUDIO_PLAYER_SPOTIFY
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_SPOTIFY
 	bool "Spotify Connect"
 	default y
 	depends on BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS
 	select BR2_PACKAGE_PROAUDIO_SPOTIFYD
 	help
-	  Enable spotifyd with only the PulseAudio playback backend.
+	  Enable spotifyd with PulseAudio and system-bus MPRIS integration.
 
 comment "Spotify Connect needs Rust support for the target architecture"
 	depends on !BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS
 
 endif
 
-comment "proaudio-player needs systemd, C++, NPTL, wchar, atomics, sync4, gcc >= 12, headers >= 5.6 and dynamic libraries"
-	depends on !BR2_INIT_SYSTEMD || !BR2_INSTALL_LIBSTDCPP || !BR2_USE_WCHAR || \
-		!BR2_TOOLCHAIN_HAS_THREADS_NPTL || !BR2_TOOLCHAIN_HAS_ATOMIC || \
-		!BR2_TOOLCHAIN_HAS_SYNC_4 || !BR2_TOOLCHAIN_GCC_AT_LEAST_12 || \
-		!BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_6 || BR2_STATIC_LIBS
+comment "proaudio-player-native needs systemd, Rust target support, wchar, threads, atomics and dynamic libraries"
+	depends on !BR2_INIT_SYSTEMD || !BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS || \
+		!BR2_USE_WCHAR || !BR2_TOOLCHAIN_HAS_THREADS || !BR2_TOOLCHAIN_HAS_ATOMIC || \
+		BR2_STATIC_LIBS

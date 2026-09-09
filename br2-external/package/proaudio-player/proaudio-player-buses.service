@@ -12,6 +12,7 @@ RuntimeDirectoryMode=0750
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
 Environment=PULSE_SERVER=unix:/run/pulse/native
 EnvironmentFile=-/etc/proaudio-player-alert/audio.env
+EnvironmentFile=-/var/lib/proaudio-player-alert/audio-output.env
 ExecStart=/usr/libexec/proaudio-player/audio-buses.sh start
 ExecStop=/usr/libexec/proaudio-player/audio-buses.sh stop
 RemainAfterExit=yes

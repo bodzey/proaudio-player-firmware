@@ -1,19 +1,5 @@
-# Headless appliance: no display, framebuffer, local VT or media/video stack.
-# CONFIG_VT is not set
-# CONFIG_DRM is not set
-# CONFIG_FB is not set
-# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
-# CONFIG_LOGO is not set
-# CONFIG_MEDIA_SUPPORT is not set
-
-# No local input devices. This removes keyboard, mouse, joystick and HID support.
-# CONFIG_INPUT is not set
-# CONFIG_HID_SUPPORT is not set
-# CONFIG_HID is not set
-# CONFIG_HIDRAW is not set
-# CONFIG_UHID is not set
-# CONFIG_USB_HID is not set
-# CONFIG_USB_HIDDEV is not set
+# Development image: keep standard Raspberry Pi 4 display, input and USB support.
+# Do not disable device classes here; the bcm2711 defconfig remains the baseline.
 
 # GPIO character-device API for the physical setup button.
 CONFIG_GPIOLIB=y
@@ -30,22 +16,42 @@ CONFIG_BRCMFMAC_SDIO=y
 CONFIG_MMC=y
 CONFIG_MMC_BCM2835=y
 
-# Raspberry Pi 4 Model B USB host controller.
+# HDMI / local console / input for development and diagnostics.
+CONFIG_VT=y
+CONFIG_INPUT=y
+CONFIG_HID_SUPPORT=y
+CONFIG_HID=y
+CONFIG_HIDRAW=y
+CONFIG_USB_HID=y
+CONFIG_DRM=y
+CONFIG_DRM_VC4=y
+CONFIG_DRM_V3D=y
+CONFIG_FB=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+
+# Raspberry Pi 4 USB host controller and common USB classes.
 CONFIG_USB=y
 CONFIG_USB_XHCI_HCD=y
-
-# USB mass storage for flash drives and external disks.
 CONFIG_SCSI=y
 CONFIG_BLK_DEV_SD=y
 CONFIG_USB_STORAGE=y
 CONFIG_USB_UAS=y
+CONFIG_USB_ACM=m
+CONFIG_USB_SERIAL=m
+CONFIG_USB_NET_DRIVERS=y
+CONFIG_USB_PRINTER=m
+CONFIG_MEDIA_SUPPORT=y
+CONFIG_USB_VIDEO_CLASS=m
+CONFIG_BT_HCIBTUSB=m
 
-# Audio outputs required by the prototype.
+# Audio outputs used during development.
 CONFIG_SOUND=y
 CONFIG_SND=y
 CONFIG_SND_PCM=y
 CONFIG_SND_BCM2835=y
 CONFIG_SND_USB_AUDIO=y
+CONFIG_SND_SOC=y
+CONFIG_SND_SOC_HDMI_CODEC=m
 
 # Common removable/external-disk filesystems.
 CONFIG_EXT4_FS=y
@@ -53,27 +59,3 @@ CONFIG_MSDOS_FS=y
 CONFIG_VFAT_FS=y
 CONFIG_EXFAT_FS=m
 CONFIG_NTFS3_FS=m
-
-# Do not support other USB device classes.
-# CONFIG_USB_MON is not set
-# CONFIG_USB_NET_DRIVERS is not set
-# CONFIG_USB_ACM is not set
-# CONFIG_USB_WDM is not set
-# CONFIG_USB_PRINTER is not set
-# CONFIG_USB_TMC is not set
-# CONFIG_USB_SERIAL is not set
-# CONFIG_USBIP_CORE is not set
-# CONFIG_USB_DWCOTG is not set
-# CONFIG_USB_DWC2 is not set
-# CONFIG_USB_DWC3 is not set
-# CONFIG_USB_GADGET is not set
-
-# Optional/specialized USB audio drivers are not needed; standard UAC uses SND_USB_AUDIO.
-# CONFIG_SND_USB_UA101 is not set
-# CONFIG_SND_USB_CAIAQ is not set
-# CONFIG_SND_USB_6FIRE is not set
-# CONFIG_SND_USB_HIFACE is not set
-# CONFIG_SND_USB_TONEPORT is not set
-
-# No USB Bluetooth transport.
-# CONFIG_BT_HCIBTUSB is not set

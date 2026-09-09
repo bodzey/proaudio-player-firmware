@@ -1,6 +1,7 @@
 [Unit]
 Description=AirPlay receiver for ProAudio Player
-After=network.target avahi-daemon.service proaudio-player-buses.service
+After=dbus.service network.target avahi-daemon.service proaudio-player-buses.service
+Wants=dbus.service
 Requires=avahi-daemon.service proaudio-player-buses.service
 
 [Service]
@@ -11,8 +12,8 @@ Environment=XDG_RUNTIME_DIR=/run/proaudio-player
 Environment=PULSE_SERVER=unix:/run/pulse/native
 Environment=PULSE_SINK=proaudio_player_music
 ExecStart=/usr/bin/shairport-sync -c /etc/proaudio-player-alert/shairport-sync.conf
-Restart=on-failure
-RestartSec=3
+Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target

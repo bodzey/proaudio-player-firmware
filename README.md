@@ -7,8 +7,8 @@ The production hardware target of this repository is currently Raspberry Pi 4 Mo
 ## Repository model
 
 ```text
-proaudio_player
-    platform-independent player core
+proaudio-player-native
+    native Rust control plane
             │
             ├────────────────────┐
             ▼                    ▼
@@ -16,11 +16,11 @@ proaudio_player_docker     proaudio-player-firmware
 Docker dev/test            Buildroot / Raspberry Pi 4 Model B
 ```
 
-This repository contains the embedded platform layer only. The player implementation is pinned as the `sources/proaudio-player` Git submodule.
+This repository contains the embedded platform layer only. The native player and its factory announcement media are pinned together in the `sources/proaudio-player-native` Git submodule.
 
 ## Raspberry Pi 4 Model B hardware profile
 
-`proaudio_rpi4_64_defconfig` is an intentionally headless appliance profile.
+`proaudio_rpi4_64_native_defconfig` is the native, intentionally headless appliance profile.
 
 Display/video:
 
@@ -56,7 +56,7 @@ The relevant platform files are:
 br2-external/board/raspberrypi4-64/config.txt
 br2-external/board/raspberrypi4-64/linux-headless-usb.fragment
 br2-external/board/raspberrypi4-64/rootfs-overlay/etc/udev/rules.d/10-proaudio-usb-allowlist.rules
-br2-external/configs/proaudio_rpi4_64_defconfig
+br2-external/configs/proaudio_rpi4_64_native_defconfig
 ```
 
 ## Wi-Fi provisioning
@@ -65,14 +65,14 @@ Raspberry Pi 4 Model B uses its onboard Broadcom Wi-Fi through NetworkManager. E
 
 `proaudio-networkd` implements headless provisioning:
 
-1. On first boot, if no `proaudio-wifi` profile exists, the device automatically enters Setup Mode.
-2. It creates an open setup access point named `ProAudio-Player-XXXX`, where `XXXX` is derived from the device serial/machine ID.
-3. The setup access point intentionally has no Wi-Fi password.
-4. The setup network is isolated and does not route Internet/LAN traffic.
-5. DHCP and captive DNS direct the client to the provisioning portal at `http://192.168.4.1/`.
+1. Ethernet has priority. While Ethernet has a default route, Wi-Fi remains disconnected.
+2. If Ethernet is unavailable, the saved `proaudio-wifi` profile is used as the fallback.
+3. Only when neither Ethernet nor saved Wi-Fi provides a route, it creates the setup access point `ProAudio-Player-XXXX`.
+4. The setup access point intentionally has no Wi-Fi password and does not route Internet/LAN traffic.
+5. DHCP and captive DNS direct setup clients to `http://192.168.4.1/`; normal LAN port 80 redirects to the player UI on port 8080.
 6. The portal scans nearby Wi-Fi networks, accepts SSID/password and attempts the connection.
-7. On success the credentials are saved as the NetworkManager profile `proaudio-wifi` and the setup AP is removed.
-8. On failure the setup AP returns and the portal allows another attempt.
+7. On success the credentials are saved as `proaudio-wifi` and the setup AP is removed.
+8. On failure the setup AP returns and allows another attempt.
 
 A physical recovery/setup button is supported on BCM GPIO26:
 
@@ -99,13 +99,13 @@ proaudio-networkctl logs 200
 
 ## Runtime architecture
 
-`BR2_PACKAGE_PROAUDIO_PLAYER=y` installs the pinned core and selects the player runtime: Python, PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio sources.
+`BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE=y` installs the pinned Rust control plane and selects PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio engines.
 
 `BR2_PACKAGE_PROAUDIO_NETWORKD=y` is the Raspberry Pi provisioning layer. It owns Wi-Fi/AP switching, captive portal and the GPIO setup button; these platform-specific functions are intentionally kept outside `proaudio_player` core.
 
 AirPlay, DLNA and Spotify Connect are enabled by default. PulseAudio is used only for client/libpulse compatibility; `pipewire-pulse` is the audio server.
 
-The shared `audio-buses.sh` comes from the player core and remains the single implementation of the music and alert buses.
+The native source arbiter owns ordinary-source exclusivity. The transitional `audio-buses.sh` adapter creates the music and alert buses until direct PipeWire API control replaces command adapters.
 
 Application services run system-wide under the dedicated `proaudio-player` account. `systemd-timesyncd` provides clock synchronization for HTTPS API access and scheduled events.
 
@@ -114,7 +114,7 @@ Application services run system-wide under the dedicated `proaudio-player` accou
 Synchronize all repositories first:
 
 ```bash
-git switch main
+git switch native
 git pull
 git submodule sync --recursive
 git submodule update --init --recursive
@@ -172,18 +172,18 @@ make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
 
 ## Player source integration
 
-Production builds use the exact revision pinned by `sources/proaudio-player`.
+Native firmware builds use the exact revision pinned by `sources/proaudio-player-native`.
 
 For a temporary local source override:
 
 ```make
-PROAUDIO_PLAYER_OVERRIDE_SRCDIR = /path/to/proaudio_player
+PROAUDIO_PLAYER_NATIVE_OVERRIDE_SRCDIR = /path/to/proaudio-player-native
 ```
 
 and rebuild with:
 
 ```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio-player-rebuild all
+make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio-player-native-rebuild all
 ```
 
 ## Announcement media

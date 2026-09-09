@@ -1,25 +1,19 @@
-start_file=start4cd.elf
-fixup_file=fixup4cd.dat
+start_file=start4.elf
+fixup_file=fixup4.dat
 kernel=Image
 arm_64bit=1
 
-# Headless appliance: no local video output.
+# Development image: keep local HDMI output available.
 disable_splash=1
 boot_delay=0
 disable_overscan=1
-display_auto_detect=0
-camera_auto_detect=0
-hdmi_ignore_hotplug:0=1
-hdmi_ignore_hotplug:1=1
-enable_tvout=0
-max_framebuffers=0
-disable_fw_kms_setup=1
-gpu_mem=16
+display_auto_detect=1
+camera_auto_detect=1
+dtoverlay=vc4-kms-v3d
 
-# Keep the Raspberry Pi 4 analogue 3.5 mm audio output available.
-# HDMI video/audio remain disabled by the HDMI settings above.
+# Keep analogue and HDMI audio support available for diagnostics.
 dtparam=audio=on
 
-# Keep UART available as the local recovery/debug console.
+# Keep UART available as an additional local recovery/debug console.
 enable_uart=1
 dtoverlay=miniuart-bt
