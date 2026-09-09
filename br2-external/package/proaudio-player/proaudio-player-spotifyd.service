@@ -14,7 +14,7 @@ Environment=XDG_RUNTIME_DIR=/run/proaudio-player
 Environment=PULSE_SERVER=unix:/run/pulse/native
 Environment=PULSE_SINK=proaudio_player_music
 ExecStart=/usr/bin/spotifyd --no-daemon --config-path /etc/proaudio-player-alert/spotifyd.conf
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]
