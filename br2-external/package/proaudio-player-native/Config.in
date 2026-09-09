@@ -1,0 +1,69 @@
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
+	bool "proaudio-player-native"
+	depends on BR2_INIT_SYSTEMD
+	depends on BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS
+	depends on BR2_USE_WCHAR
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_TOOLCHAIN_HAS_ATOMIC
+	depends on BR2_PACKAGE_PULSEAUDIO_HAS_ATOMIC
+	depends on !BR2_STATIC_LIBS
+	select BR2_PACKAGE_BASH
+	select BR2_PACKAGE_CA_CERTIFICATES
+	select BR2_PACKAGE_SYSTEMD_TIMESYNCD
+	select BR2_PACKAGE_ALSA_LIB
+	select BR2_PACKAGE_ALSA_UTILS
+	select BR2_PACKAGE_ALSA_UTILS_AMIXER
+	select BR2_PACKAGE_ALSA_UTILS_APLAY
+	select BR2_PACKAGE_PIPEWIRE
+	select BR2_PACKAGE_PULSEAUDIO
+	select BR2_PACKAGE_LUA
+	select BR2_PACKAGE_LUA_5_4
+	select BR2_PACKAGE_WIREPLUMBER
+	select BR2_PACKAGE_MPV
+	select BR2_PACKAGE_MPD
+	select BR2_PACKAGE_MPD_PULSEAUDIO
+	select BR2_PACKAGE_MPD_CURL
+	select BR2_PACKAGE_MPD_FFMPEG
+	select BR2_PACKAGE_MPD_MPC
+	help
+	  Native Rust control plane for ProAudio Player.
+	  Reuses the existing PipeWire/ALSA media path and protocol engines while
+	  replacing the Python alert, arbitration and web-control runtime.
+
+if BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
+
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY
+	bool "AirPlay receiver"
+	default y
+	select BR2_PACKAGE_PROAUDIO_SHAIRPORT_SYNC
+	help
+	  Enable Shairport Sync with the PulseAudio backend and MPRIS support.
+
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA
+	bool "DLNA / UPnP renderer"
+	default y
+	select BR2_PACKAGE_GMRENDER_RESURRECT
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_PULSE
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_SOUPHTTPSRC
+	select BR2_PACKAGE_GST1_LIBAV
+	help
+	  Enable the GStreamer-based DLNA/UPnP renderer.
+
+config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_SPOTIFY
+	bool "Spotify Connect"
+	default y
+	depends on BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS
+	select BR2_PACKAGE_PROAUDIO_SPOTIFYD
+	help
+	  Enable spotifyd with PulseAudio and system-bus MPRIS integration.
+
+comment "Spotify Connect needs Rust support for the target architecture"
+	depends on !BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS
+
+endif
+
+comment "proaudio-player-native needs systemd, Rust target support, wchar, threads, atomics and dynamic libraries"
+	depends on !BR2_INIT_SYSTEMD || !BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS || \
+		!BR2_USE_WCHAR || !BR2_TOOLCHAIN_HAS_THREADS || !BR2_TOOLCHAIN_HAS_ATOMIC || \
+		BR2_STATIC_LIBS
