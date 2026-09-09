@@ -88,8 +88,7 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_RUNTIME_LAYOUT
 		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/minute_silence.mp3
 	$(INSTALL) -D -m 0755 $(@D)/scripts/audio-buses.sh \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
-	$(INSTALL) -D -m 0755 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-audioctl \
+	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-audioctl \
 		$(TARGET_DIR)/usr/sbin/proaudio-player-audioctl
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player.tmpfiles.conf \
@@ -141,8 +140,7 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-mpd.service
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/proaudio-player-native.service \
+	$(INSTALL) -D -m 0644 $(@D)/systemd/proaudio-player-native.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-native.service
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/proaudio-player-buses.service \
