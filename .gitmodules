@@ -5,3 +5,7 @@
 	path = sources/proaudio-player
 	url = ../proaudio_player.git
 	branch = dev
+[submodule "sources/proaudio-player-native"]
+	path = sources/proaudio-player-native
+	url = ../proaudio-player-native.git
+	branch = dev
