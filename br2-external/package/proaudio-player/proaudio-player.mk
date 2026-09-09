@@ -112,6 +112,9 @@ endif
 
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_DLNA),y)
 define PROAUDIO_PLAYER_INSTALL_DLNA_SYSTEMD
+	$(INSTALL) -D -m 0755 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/dlna-renderer.sh \
+		$(TARGET_DIR)/usr/libexec/proaudio-player/dlna-renderer.sh
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-dlna.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-dlna.service
