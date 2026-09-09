@@ -160,6 +160,12 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-buses.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-buses.service
 	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-audio-output.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-audio-output.service
+	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-audio-output.path \
+		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-audio-output.path
+	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-mpd.service
 	$(INSTALL) -D -m 0644 $(@D)/systemd/proaudio-player-native.service \
@@ -167,6 +173,8 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/proaudio-player-buses.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-buses.service
+	ln -sf /usr/lib/systemd/system/proaudio-player-audio-output.path \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-audio-output.path
 	ln -sf /usr/lib/systemd/system/proaudio-player-mpd.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-mpd.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-native.service \
