@@ -47,8 +47,9 @@ endif
 define PROAUDIO_PLAYER_NATIVE_VENDOR_CRATES
 	if [ ! -d "$(@D)/VENDOR" ]; then \
 		cd "$(@D)" && \
+		PATH="$(HOST_DIR)/bin:$$PATH" \
 		CARGO_HOME="$(DL_DIR)/br-cargo-home" \
-		cargo vendor --locked VENDOR; \
+		"$(HOST_DIR)/bin/cargo" vendor --locked VENDOR; \
 	fi
 	mkdir -p "$(@D)/.cargo"
 	printf '%s\n' \
