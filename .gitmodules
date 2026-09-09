@@ -1,10 +1,6 @@
 [submodule "upstream/buildroot"]
 	path = upstream/buildroot
 	url = https://gitlab.com/buildroot.org/buildroot.git
-[submodule "sources/proaudio-player"]
-	path = sources/proaudio-player
-	url = ../proaudio_player.git
-	branch = feature/4stream-integration
 [submodule "sources/proaudio-player-native"]
 	path = sources/proaudio-player-native
 	url = ../proaudio-player-native.git

@@ -16,7 +16,7 @@ proaudio_player_docker     proaudio-player-firmware
 Docker dev/test            Buildroot / Raspberry Pi 4 Model B
 ```
 
-This repository contains the embedded platform layer only. The native player is pinned as the `sources/proaudio-player-native` Git submodule. The legacy `sources/proaudio-player` submodule is temporarily retained only as the source of standard announcement MP3 assets.
+This repository contains the embedded platform layer only. The native player and its factory announcement media are pinned together in the `sources/proaudio-player-native` Git submodule.
 
 ## Raspberry Pi 4 Model B hardware profile
 

@@ -78,13 +78,13 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_RUNTIME_LAYOUT
 		$(@D)/config/wireplumber/51-proaudio-soft-mixer.conf \
 		$(TARGET_DIR)/etc/wireplumber/wireplumber.conf.d/51-proaudio-soft-mixer.conf
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/src/proaudio_player_alert/default_media/alarm_start.mp3 \
+		$(@D)/assets/announcements/alarm_start.mp3 \
 		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/alarm_start.mp3
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/src/proaudio_player_alert/default_media/alarm_end.mp3 \
+		$(@D)/assets/announcements/alarm_end.mp3 \
 		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/alarm_end.mp3
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/src/proaudio_player_alert/default_media/minute_silence.mp3 \
+		$(@D)/assets/announcements/minute_silence.mp3 \
 		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/minute_silence.mp3
 	$(INSTALL) -D -m 0755 $(@D)/scripts/audio-buses.sh \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
