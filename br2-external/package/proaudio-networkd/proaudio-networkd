@@ -108,10 +108,32 @@ class PortalHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def _is_setup_request(self):
+        local_address = self.connection.getsockname()[0]
+        with self.daemon.lock:
+            return (
+                self.daemon.setup_active
+                and local_address == self.daemon.cfg["SETUP_ADDRESS"]
+            )
+
+    def _redirect_player(self):
+        local_address = self.connection.getsockname()[0]
+        self.send_response(302)
+        self.send_header("Location", f"http://{local_address}:8080/")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def do_GET(self):
+        if not self._is_setup_request():
+            self._redirect_player()
+            return
         self._send_html(self.daemon.portal_page())
 
     def do_POST(self):
+        if not self._is_setup_request():
+            self._redirect_player()
+            return
         if self.path.rstrip("/") != "/connect":
             self._send_html(self.daemon.portal_page(), 404)
             return
@@ -203,9 +225,72 @@ class NetworkDaemon:
             if result.returncode != 0:
                 LOG.warning("Не вдалося встановити regulatory domain %s: %s", country, result.stderr.strip())
 
-    def has_wifi_profile(self):
-        result = self.nmcli("-t", "-f", "NAME", "connection", "show", WIFI_PROFILE)
+    def default_route_interfaces(self):
+        try:
+            with open("/proc/net/route", "r", encoding="ascii") as handle:
+                routes = handle.read().splitlines()[1:]
+        except OSError:
+            return set()
+        interfaces = set()
+        for route in routes:
+            fields = route.split()
+            if len(fields) < 4:
+                continue
+            interface, destination, _gateway, flags = fields[:4]
+            try:
+                route_flags = int(flags, 16)
+            except ValueError:
+                continue
+            if destination == "00000000" and route_flags & 0x1:
+                interfaces.add(interface)
+        return interfaces
+
+    def has_network_connection(self):
+        interfaces = self.default_route_interfaces()
+        if self.setup_active:
+            interfaces.discard(self.iface)
+        return bool(interfaces)
+
+    def ethernet_connected(self):
+        return any(
+            interface != self.iface
+            for interface in self.default_route_interfaces()
+        )
+
+    def wifi_profile_exists(self):
+        result = self.nmcli(
+            "-t", "-f", "NAME", "connection", "show", WIFI_PROFILE
+        )
         return result.returncode == 0 and WIFI_PROFILE in result.stdout.splitlines()
+
+    def set_wifi_standby(self, standby):
+        if self.setup_active:
+            self.stop_ap()
+        if not self.wifi_profile_exists():
+            if standby:
+                self.nmcli("device", "disconnect", self.iface, timeout=10)
+            return
+        self.nmcli(
+            "connection", "modify", WIFI_PROFILE,
+            "connection.autoconnect", "no" if standby else "yes",
+            timeout=10,
+        )
+        if standby:
+            self.nmcli("connection", "down", WIFI_PROFILE, timeout=15)
+            self.nmcli("device", "disconnect", self.iface, timeout=10)
+            LOG.info("Ethernet активний: Wi-Fi переведено в резерв")
+            return
+        result = self.nmcli(
+            "--wait", "25", "connection", "up", WIFI_PROFILE,
+            "ifname", self.iface, timeout=30,
+        )
+        if result.returncode == 0:
+            LOG.info("Ethernet недоступний: Wi-Fi підключення відновлено")
+        else:
+            LOG.warning(
+                "Не вдалося відновити Wi-Fi: %s",
+                result.stderr.strip() or result.stdout.strip(),
+            )
 
     def device_serial_suffix(self):
         serial = ""
@@ -463,27 +548,41 @@ small{{color:#666}}.error{{background:#fee;color:#900;padding:10px;border-radius
             with self.lock:
                 self.connecting = False
 
-    def run_portal(self, timeout_seconds=None):
+    def start_httpd(self):
+        if self.httpd is not None:
+            return
+        self.httpd = PortalServer(("0.0.0.0", 80), PortalHandler)
+        self.httpd.proaudio_daemon = self
+        threading.Thread(
+            target=self.httpd.serve_forever,
+            name="network-http",
+            daemon=True,
+        ).start()
+        LOG.info("HTTP gateway active on port 80")
+
+    def stop_httpd(self):
+        if self.httpd is None:
+            return
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.httpd = None
+
+    def run_portal(self, timeout_seconds=None, stop_when_online=False):
         self.setup_complete.clear()
         self.set_error("")
         self.scan()
         self.start_ap()
-        self.httpd = PortalServer(("0.0.0.0", 80), PortalHandler)
-        self.httpd.proaudio_daemon = self
-        server_thread = threading.Thread(target=self.httpd.serve_forever, name="portal-http", daemon=True)
-        server_thread.start()
         deadline = None if timeout_seconds is None else time.monotonic() + timeout_seconds
         try:
             while not self.stop_event.is_set() and not self.setup_complete.is_set():
+                if stop_when_online and self.has_network_connection():
+                    LOG.info("Мережеве підключення відновлено: Setup Mode вимкнено")
+                    break
                 if deadline is not None and time.monotonic() >= deadline:
                     LOG.info("Setup mode timeout")
                     break
                 time.sleep(0.25)
         finally:
-            if self.httpd is not None:
-                self.httpd.shutdown()
-                self.httpd.server_close()
-                self.httpd = None
             self.stop_ap()
 
     def request_setup(self, *_args):
@@ -541,21 +640,43 @@ small{{color:#666}}.error{{background:#fee;color:#900;padding:10px;border-radius
         if not self.iface:
             raise RuntimeError("Wi-Fi interface не знайдено")
         LOG.info("Wi-Fi interface: %s", self.iface)
+        self.start_httpd()
         threading.Thread(target=self.gpio_button_worker, name="gpio-button", daemon=True).start()
 
-        if not self.has_wifi_profile():
-            LOG.info("Збереженої Wi-Fi мережі немає: автоматичний Setup Mode")
-            self.run_portal(timeout_seconds=None)
-
         timeout = max(60, int(self.cfg["SETUP_TIMEOUT"]))
+        offline_since = None
+        ethernet_was_connected = None
         while not self.stop_event.is_set():
-            if not self.setup_request.wait(timeout=0.5):
+            ethernet_is_connected = self.ethernet_connected()
+            if ethernet_is_connected != ethernet_was_connected:
+                self.set_wifi_standby(ethernet_is_connected)
+                ethernet_was_connected = ethernet_is_connected
+
+            if self.setup_request.wait(timeout=0.5):
+                self.setup_request.clear()
+                if self.stop_event.is_set():
+                    break
+                if ethernet_is_connected:
+                    LOG.info("Setup Mode пропущено: активне Ethernet-підключення")
+                    continue
+                LOG.info("Примусовий Setup Mode")
+                self.run_portal(timeout_seconds=timeout)
+                offline_since = None
                 continue
-            self.setup_request.clear()
-            if self.stop_event.is_set():
-                break
-            LOG.info("Примусовий Setup Mode")
-            self.run_portal(timeout_seconds=timeout)
+
+            if self.has_network_connection():
+                offline_since = None
+                continue
+            if offline_since is None:
+                offline_since = time.monotonic()
+                LOG.info("Мережеве підключення відсутнє; очікування перед Setup Mode")
+                continue
+            if time.monotonic() - offline_since < 15:
+                continue
+
+            LOG.info("Мережеве підключення відсутнє: автоматичний Setup Mode")
+            self.run_portal(timeout_seconds=None, stop_when_online=True)
+            offline_since = None
 
     def stop(self, *_args):
         self.stop_event.set()
@@ -573,6 +694,7 @@ def main():
     try:
         daemon.run()
     finally:
+        daemon.stop_httpd()
         daemon.stop_ap()
 
 
