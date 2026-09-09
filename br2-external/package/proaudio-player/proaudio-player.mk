@@ -21,7 +21,6 @@ PROAUDIO_PLAYER_DEPENDENCIES = \
 	pulseaudio \
 	python-aiohttp \
 	python-pyyaml \
-	python-serial \
 	python3 \
 	systemd \
 	wireplumber
