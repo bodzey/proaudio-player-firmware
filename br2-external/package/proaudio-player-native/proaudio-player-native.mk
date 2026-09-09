@@ -11,6 +11,7 @@ PROAUDIO_PLAYER_NATIVE_LICENSE = MIT
 PROAUDIO_PLAYER_NATIVE_DEPENDENCIES = \
 	alsa-lib \
 	alsa-utils \
+	avahi \
 	bash \
 	ca-certificates \
 	dbus \
@@ -23,7 +24,7 @@ PROAUDIO_PLAYER_NATIVE_DEPENDENCIES = \
 	wireplumber
 
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY),y)
-PROAUDIO_PLAYER_NATIVE_DEPENDENCIES += avahi proaudio-shairport-sync
+PROAUDIO_PLAYER_NATIVE_DEPENDENCIES += proaudio-shairport-sync
 endif
 
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA),y)
@@ -53,21 +54,20 @@ endef
 
 define PROAUDIO_PLAYER_NATIVE_INSTALL_RUNTIME_LAYOUT
 	$(INSTALL) -d -m 0755 $(TARGET_DIR)/etc/proaudio-player-alert
+	$(INSTALL) -d -m 0755 $(TARGET_DIR)/etc/avahi/services
 	$(INSTALL) -d -m 0755 $(TARGET_DIR)/var/lib/proaudio-player-alert/media
 	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/config.yaml
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/config/audio.env.example \
+	$(INSTALL) -D -m 0644 $(@D)/config/audio.env.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/audio.env
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/config/mpd.conf \
+	$(INSTALL) -D -m 0644 $(@D)/config/mpd.conf \
 		$(TARGET_DIR)/etc/proaudio-player-alert/mpd.conf
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/config/shairport-sync.conf \
+	$(INSTALL) -D -m 0644 $(@D)/config/shairport-sync.conf \
 		$(TARGET_DIR)/etc/proaudio-player-alert/shairport-sync.conf
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/config/spotifyd.conf \
+	$(INSTALL) -D -m 0644 $(@D)/config/spotifyd.conf \
 		$(TARGET_DIR)/etc/proaudio-player-alert/spotifyd.conf
+	$(INSTALL) -D -m 0644 $(@D)/config/avahi/proaudio-linkplay.service \
+		$(TARGET_DIR)/etc/avahi/services/proaudio-linkplay.service
 	$(INSTALL) -D -m 0600 /dev/null \
 		$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token
 	$(INSTALL) -D -m 0600 /dev/null \
@@ -75,7 +75,7 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_RUNTIME_LAYOUT
 	$(INSTALL) -D -m 0600 /dev/null \
 		$(TARGET_DIR)/var/lib/proaudio-player-alert/audio-settings.yaml
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/config/wireplumber/51-proaudio-soft-mixer.conf \
+		$(@D)/config/wireplumber/51-proaudio-soft-mixer.conf \
 		$(TARGET_DIR)/etc/wireplumber/wireplumber.conf.d/51-proaudio-soft-mixer.conf
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/src/proaudio_player_alert/default_media/alarm_start.mp3 \
@@ -86,8 +86,7 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_RUNTIME_LAYOUT
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/src/proaudio_player_alert/default_media/minute_silence.mp3 \
 		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/minute_silence.mp3
-	$(INSTALL) -D -m 0755 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player/scripts/audio-buses.sh \
+	$(INSTALL) -D -m 0755 $(@D)/scripts/audio-buses.sh \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
 	$(INSTALL) -D -m 0755 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-audioctl \
