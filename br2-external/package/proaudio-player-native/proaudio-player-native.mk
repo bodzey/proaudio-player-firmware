@@ -45,9 +45,6 @@ endef
 define PROAUDIO_PLAYER_NATIVE_PERMISSIONS
 	/etc/proaudio-player-alert/config.yaml f 640 root proaudio-player - - - - -
 	/etc/proaudio-player-alert/alerts-token f 600 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/media/alarm_start.mp3 f 644 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/media/alarm_end.mp3 f 644 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/media/minute_silence.mp3 f 644 proaudio-player proaudio-player - - - - -
 	/var/lib/proaudio-player-alert/provider-settings.yaml f 600 proaudio-player proaudio-player - - - - -
 	/var/lib/proaudio-player-alert/audio-settings.yaml f 600 proaudio-player proaudio-player - - - - -
 endef
@@ -55,7 +52,7 @@ endef
 define PROAUDIO_PLAYER_NATIVE_INSTALL_RUNTIME_LAYOUT
 	$(INSTALL) -d -m 0755 $(TARGET_DIR)/etc/proaudio-player-alert
 	$(INSTALL) -d -m 0755 $(TARGET_DIR)/etc/avahi/services
-	$(INSTALL) -d -m 0755 $(TARGET_DIR)/var/lib/proaudio-player-alert/media
+	$(INSTALL) -d -m 0755 $(TARGET_DIR)/usr/share/proaudio-player/announcements
 	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/config.yaml
 	$(INSTALL) -D -m 0644 $(@D)/config/audio.env.example \
@@ -79,13 +76,13 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_RUNTIME_LAYOUT
 		$(TARGET_DIR)/etc/wireplumber/wireplumber.conf.d/51-proaudio-soft-mixer.conf
 	$(INSTALL) -D -m 0644 \
 		$(@D)/assets/announcements/alarm_start.mp3 \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/alarm_start.mp3
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/alarm_start.mp3
 	$(INSTALL) -D -m 0644 \
 		$(@D)/assets/announcements/alarm_end.mp3 \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/alarm_end.mp3
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/alarm_end.mp3
 	$(INSTALL) -D -m 0644 \
 		$(@D)/assets/announcements/minute_silence.mp3 \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/minute_silence.mp3
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/minute_silence.mp3
 	$(INSTALL) -D -m 0755 $(@D)/scripts/audio-buses.sh \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
 	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-audioctl \
