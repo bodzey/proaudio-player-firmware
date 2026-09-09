@@ -137,6 +137,12 @@ define PROAUDIO_PLAYER_INSTALL_INIT_SYSTEMD
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-buses.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-buses.service
 	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-output-apply.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-output-apply.service
+	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-output-apply.path \
+		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-output-apply.path
+	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-alert.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-alert.service
 	$(INSTALL) -D -m 0644 \
@@ -148,6 +154,8 @@ define PROAUDIO_PLAYER_INSTALL_INIT_SYSTEMD
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/proaudio-player-buses.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-buses.service
+	ln -sf /usr/lib/systemd/system/proaudio-player-output-apply.path \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-output-apply.path
 	ln -sf /usr/lib/systemd/system/proaudio-player-alert.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-alert.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-webui.service \

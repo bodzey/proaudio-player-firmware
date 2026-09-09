@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch ProAudio Player audio output selection
+
+[Path]
+PathChanged=/var/lib/proaudio-player-alert/audio-output.env
+Unit=proaudio-player-output-apply.service
+
+[Install]
+WantedBy=multi-user.target
