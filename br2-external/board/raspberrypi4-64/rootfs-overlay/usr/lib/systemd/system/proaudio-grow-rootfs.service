@@ -1,0 +1,13 @@
+[Unit]
+Description=Expand ProAudio root filesystem to fill the SD card
+After=local-fs.target
+Before=proaudio-player-buses.service proaudio-player-native.service proaudio-player-spotifyd.service
+ConditionPathExists=!/var/lib/proaudio-rootfs-grow/done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/proaudio-player/grow-rootfs
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

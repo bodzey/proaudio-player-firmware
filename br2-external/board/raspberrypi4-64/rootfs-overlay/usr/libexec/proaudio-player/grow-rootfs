@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+
+disk=/dev/mmcblk0
+partition=/dev/mmcblk0p2
+state_dir=/var/lib/proaudio-rootfs-grow
+done_marker="$state_dir/done"
+pending_marker="$state_dir/partition-expanded"
+
+[ -e "$done_marker" ] && exit 0
+[ -b "$disk" ] && [ -b "$partition" ] || exit 0
+
+mkdir -p "$state_dir"
+
+if [ ! -e "$pending_marker" ]; then
+    disk_sectors=$(cat /sys/class/block/mmcblk0/size)
+    part_start=$(cat /sys/class/block/mmcblk0p2/start)
+    part_sectors=$(cat /sys/class/block/mmcblk0p2/size)
+    unused_sectors=$((disk_sectors - part_start - part_sectors))
+
+    if [ "$unused_sectors" -gt 4096 ]; then
+        printf ',\n' | /usr/sbin/sfdisk --no-reread -N 2 "$disk"
+        touch "$pending_marker"
+        sync
+        systemctl --no-block reboot
+        exit 0
+    fi
+fi
+
+/usr/sbin/resize2fs "$partition"
+touch "$done_marker"
+rm -f "$pending_marker"
+sync
