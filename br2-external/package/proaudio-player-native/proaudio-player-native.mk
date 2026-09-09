@@ -39,7 +39,7 @@ PROAUDIO_PLAYER_NATIVE_DEPENDENCIES += proaudio-spotifyd
 endif
 
 define PROAUDIO_PLAYER_NATIVE_USERS
-	proaudio-player -1 proaudio-player -1 * /var/lib/proaudio-player /bin/false audio,dialout,pipewire ProAudio Player
+	proaudio-player -1 proaudio-player -1 * /var/lib/proaudio-player /bin/false audio,pipewire ProAudio Player
 endef
 
 define PROAUDIO_PLAYER_NATIVE_PERMISSIONS
