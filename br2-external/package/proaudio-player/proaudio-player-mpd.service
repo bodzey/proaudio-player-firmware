@@ -2,6 +2,7 @@
 Description=MPD local music and Internet radio source
 After=proaudio-player-buses.service
 Requires=proaudio-player-buses.service
+Conflicts=mpd.service
 
 [Service]
 Type=simple
