@@ -1,0 +1,8 @@
+config BR2_PACKAGE_PROAUDIO_WEBUI
+	bool "proaudio-webui"
+	depends on BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
+	help
+	  Optional browser frontend for ProAudio Player. The frontend is packaged
+	  independently from the native player control plane and communicates with
+	  it through the versioned HTTP API. Disabling this package must not affect
+	  playback, alerts, source arbitration or API operation.
