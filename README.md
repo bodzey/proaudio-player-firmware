@@ -18,6 +18,12 @@ Docker dev/test            Buildroot / Raspberry Pi 4 Model B
 
 This repository contains the embedded platform layer only. The native player and its factory announcement media are pinned together in the `sources/proaudio-player-native` Git submodule.
 
+Branch pairing is explicit and reproducible:
+
+- `proaudio-player-firmware/main` is the production branch and pins a stable `proaudio-player-native/main` revision;
+- `proaudio-player-firmware/dev` is the development branch and pins a tested `proaudio-player-native/dev` revision;
+- firmware builds use the exact gitlink revision recorded by the firmware commit; do not use `git submodule update --remote` for reproducible image builds.
+
 ## Raspberry Pi 4 Model B hardware profile
 
 `proaudio_rpi4_64_native_defconfig` is the native, intentionally headless appliance profile.
@@ -109,13 +115,13 @@ The native source arbiter owns ordinary-source exclusivity. The transitional `au
 
 Application services run system-wide under the dedicated `proaudio-player` account. `systemd-timesyncd` provides clock synchronization for HTTPS API access and scheduled events.
 
-## Completely clean Raspberry Pi 4 build
+## Completely clean Raspberry Pi 4 development build
 
-Synchronize all repositories first:
+Synchronize the development branch and its pinned submodules first:
 
 ```bash
-git switch native
-git pull
+git switch dev
+git pull --ff-only
 git submodule sync --recursive
 git submodule update --init --recursive
 ```
@@ -129,18 +135,18 @@ rm -f upstream/buildroot/.config upstream/buildroot/.config.old
 
 Downloaded source archives may remain in `upstream/buildroot/dl`; they are not build state.
 
-Load the Raspberry Pi 4 Model B configuration:
+Load the Raspberry Pi 4 Model B native appliance configuration:
 
 ```bash
 make -C upstream/buildroot \
   BR2_EXTERNAL="$PWD/br2-external" \
-  proaudio_rpi4_64_defconfig
+  proaudio_rpi4_64_native_defconfig
 ```
 
 Build:
 
 ```bash
-make -j8 -C upstream/buildroot \
+make -j"$(nproc)" -C upstream/buildroot \
   BR2_EXTERNAL="$PWD/br2-external"
 ```
 
