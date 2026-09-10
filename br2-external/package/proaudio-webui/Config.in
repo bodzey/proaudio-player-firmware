@@ -1,8 +1,13 @@
 config BR2_PACKAGE_PROAUDIO_WEBUI
 	bool "proaudio-webui"
 	depends on BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
+	select BR2_PACKAGE_HOST_NODEJS
 	help
-	  Optional browser frontend for ProAudio Player. The frontend is packaged
-	  independently from the native player control plane and communicates with
-	  it through the versioned HTTP API. Disabling this package must not affect
-	  playback, alerts, source arbitration or API operation.
+	  Optional browser frontend for ProAudio Player. The frontend is built
+	  independently from the native Rust control plane and communicates with
+	  it through the versioned HTTP API.
+
+	  Node.js is used only on the build host. The target image receives only
+	  the generated static assets under /usr/share/proaudio-player/webui.
+	  Disabling this package must not affect playback, alerts, source
+	  arbitration or API operation.
