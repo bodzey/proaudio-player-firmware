@@ -14,6 +14,9 @@ ifeq ($(BR2_PACKAGE_PROAUDIO_WEBUI),y)
 ifeq ($(wildcard $(PROAUDIO_WEBUI_SITE)/package.json),)
 $(error BR2_PACKAGE_PROAUDIO_WEBUI=y requires the pinned Web UI submodule; run 'git submodule update --init --recursive')
 endif
+ifeq ($(wildcard $(PROAUDIO_WEBUI_SITE)/package-lock.json),)
+$(error BR2_PACKAGE_PROAUDIO_WEBUI=y requires package-lock.json for reproducible npm ci builds)
+endif
 endif
 
 define PROAUDIO_WEBUI_BUILD_CMDS
@@ -23,7 +26,7 @@ define PROAUDIO_WEBUI_BUILD_CMDS
 		npm_config_audit=false \
 		npm_config_fund=false \
 		npm_config_update_notifier=false \
-		$(HOST_DIR)/bin/npm install --include=dev
+		$(HOST_DIR)/bin/npm ci --include=dev
 	cd $(@D) && \
 		PATH="$(HOST_DIR)/bin:$$PATH" \
 		$(HOST_DIR)/bin/npm run build
