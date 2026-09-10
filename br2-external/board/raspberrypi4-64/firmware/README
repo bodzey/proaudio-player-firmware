@@ -1,0 +1,24 @@
+Raspberry Pi 4 BCM43455 CLM override
+
+Source:
+https://github.com/Infineon/ifx-linux-firmware
+
+Release:
+release-v6.1.145-2026_0108
+
+Commit:
+f24790e6fa2f05a0f974236bed7da7fa493b9ad2
+
+File:
+firmware/cyfmac43455-sdio.clm_blob
+
+SHA256:
+8fbe9fc2952e2fbab062a142c1ea3e261cd74604761e12f304781b911df4a328
+
+Reason:
+The CLM shipped by Buildroot 2026.08 / LibreELEC firmware bundle causes
+BCM43455 regulatory failures on the Raspberry Pi 4 test target:
+"Firmware rejected country setting" and brcmf_set_channel reason -52.
+
+Only the CLM blob is overridden. The standard BCM43455 firmware binary
+remains unchanged.
