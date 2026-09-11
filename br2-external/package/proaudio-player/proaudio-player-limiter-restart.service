@@ -1,6 +1,0 @@
-[Unit]
-Description=Restart ProAudio Player limiter after output route change
-
-[Service]
-Type=oneshot
-ExecStart=/bin/systemctl try-restart proaudio-player-limiter.service
