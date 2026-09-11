@@ -129,14 +129,19 @@ endif
 define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/target/$(RUSTC_TARGET_NAME)/release/proaudio-player-native \
 		$(TARGET_DIR)/usr/bin/proaudio-player-native
-	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml \
+	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/config.yaml
-	$(INSTALL) -D -m 0644 $(@D)/assets/alert_start.wav \
-		$(TARGET_DIR)/usr/share/proaudio-player-alert/alert_start.wav
-	$(INSTALL) -D -m 0644 $(@D)/assets/alert_end.wav \
-		$(TARGET_DIR)/usr/share/proaudio-player-alert/alert_end.wav
-	$(INSTALL) -D -m 0644 $(@D)/assets/minute_silence.wav \
-		$(TARGET_DIR)/usr/share/proaudio-player-alert/minute_silence.wav
+	$(INSTALL) -D -m 0644 $(@D)/config/mpd.conf \
+		$(TARGET_DIR)/etc/proaudio-player-alert/mpd.conf
+	$(INSTALL) -D -m 0644 $(@D)/assets/announcements/alarm_start.mp3 \
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/alarm_start.mp3
+	$(INSTALL) -D -m 0644 $(@D)/assets/announcements/alarm_end.mp3 \
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/alarm_end.mp3
+	$(INSTALL) -D -m 0644 $(@D)/assets/announcements/minute_silence.mp3 \
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/minute_silence.mp3
+	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player.tmpfiles.conf \
+		$(TARGET_DIR)/usr/lib/tmpfiles.d/proaudio-player.conf
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_AIRPLAY_CONFIG)
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_DLNA_CONFIG)
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_SPOTIFY_CONFIG)
