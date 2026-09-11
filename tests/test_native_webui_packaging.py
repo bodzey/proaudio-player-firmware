@@ -154,3 +154,37 @@ def test_native_and_webui_share_authoritative_realtime_audio_contract():
     assert "capabilities: AudioOutputCapabilities;" in webui_types
     assert "props.status?.audio_levels.master" in mixer
     assert "lastStatusSignature" not in mixer
+
+
+def test_persistent_state_and_spotify_receiver_are_runtime_safe():
+    tmpfiles = (PLAYER_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
+    spotify_service = (PLAYER_PACKAGE / "proaudio-player-spotifyd.service").read_text(
+        encoding="utf-8"
+    )
+    spotify_config = (
+        ROOT / "sources/proaudio-player-native/config/spotifyd.conf"
+    ).read_text(encoding="utf-8")
+    mixer = (
+        ROOT / "sources/proaudio-player-webui/src/features/mixer/MixerPanel.tsx"
+    ).read_text(encoding="utf-8")
+
+    for path in [
+        "/var/lib/proaudio-player-alert/state.json",
+        "/var/lib/proaudio-player-alert/provider-settings.yaml",
+        "/var/lib/proaudio-player-alert/audio-settings.yaml",
+        "/var/lib/proaudio-player-alert/audio-output.env",
+    ]:
+        assert f"z {path} 0600 proaudio-player proaudio-player -" in tmpfiles
+
+    # Spotify is a transport, not another user gain stage. Keep its discovery
+    # credentials volatile because the arbiter deliberately restarts receivers.
+    assert 'volume_controller = "none"' in spotify_config
+    assert 'cache_path = "/run/proaudio-player/spotifyd"' in spotify_config
+    assert "no_audio_cache = true" in spotify_config
+    assert "ExecStartPre=/bin/rm -rf /run/proaudio-player/spotifyd" in spotify_service
+    assert "ExecStartPre=/bin/mkdir -p /run/proaudio-player/spotifyd" in spotify_service
+
+    # Losing /status must never fabricate MUSIC = 0%; /audio/mixer remains a valid
+    # authoritative fallback while the realtime status channel recovers.
+    assert "return mixerState()?.music ?? levelFromPercent(100, false);" in mixer
+    assert "if (muted !== undefined)" in mixer
