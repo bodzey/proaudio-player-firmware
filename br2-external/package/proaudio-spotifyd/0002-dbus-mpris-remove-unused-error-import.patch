@@ -1,0 +1,25 @@
+From: ProAudio Player <noreply@proaudio-player.local>
+Date: Sat, 12 Sep 2026 00:35:00 +0300
+Subject: [PATCH] spotifyd: remove unused MPRIS error log import
+
+spotifyd 0.4.2 imports the `error` logging macro in dbus_mpris.rs but does not
+use it with the ProAudio build feature set. Remove the unused import so the
+cross-build is warning-free.
+---
+ src/dbus_mpris.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/dbus_mpris.rs b/src/dbus_mpris.rs
+--- a/src/dbus_mpris.rs
++++ b/src/dbus_mpris.rs
+@@ -17,7 +17,7 @@ use librespot_connect::{LoadContextOptions, LoadRequest, LoadRequestOptions, Spi
+ use librespot_core::{Session, SpotifyUri};
+ use librespot_metadata::audio::AudioItem;
+ use librespot_playback::player::PlayerEvent;
+-use log::{debug, error, warn};
++use log::{debug, warn};
+ use std::convert::TryFrom;
+ use std::{
+     collections::HashMap,
+-- 
+2.51.0
