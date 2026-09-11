@@ -52,6 +52,12 @@ def test_native_audio_runtime_packages_final_limiter_and_generic_configs():
     assert "scripts/audio-buses.sh" in native_makefile
     assert "config/wireplumber/51-proaudio-soft-mixer.conf" in native_makefile
 
+    # Native source selection is runtime/Kconfig policy. Cargo.toml intentionally
+    # has no feature matrix, so Buildroot must not manufacture stale Rust features.
+    assert "PROAUDIO_PLAYER_NATIVE_FEATURES" not in native_makefile
+    assert "PROAUDIO_PLAYER_NATIVE_CARGO_BUILD_OPTS" not in native_makefile
+    assert "--no-default-features" not in native_makefile
+
     # A generic package must never pull runtime configuration from a board profile.
     assert "board/raspberrypi4-64" not in native_makefile
     assert "$(@D)/config/spotifyd.conf" in native_makefile
