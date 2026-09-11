@@ -96,13 +96,12 @@ endif
 
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY),y)
 define PROAUDIO_PLAYER_NATIVE_INSTALL_AIRPLAY_CONFIG
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/shairport-sync.conf \
-		$(TARGET_DIR)/etc/shairport-sync.conf
+	$(INSTALL) -D -m 0644 $(@D)/config/shairport-sync.conf \
+		$(TARGET_DIR)/etc/proaudio-player-alert/shairport-sync.conf
 endef
 else
 define PROAUDIO_PLAYER_NATIVE_INSTALL_AIRPLAY_CONFIG
-	rm -f $(TARGET_DIR)/etc/shairport-sync.conf
+	rm -f $(TARGET_DIR)/etc/proaudio-player-alert/shairport-sync.conf
 endef
 endif
 
@@ -110,11 +109,11 @@ ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA),y)
 define PROAUDIO_PLAYER_NATIVE_INSTALL_DLNA_CONFIG
 	$(INSTALL) -D -m 0755 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/dlna-renderer.sh \
-		$(TARGET_DIR)/usr/bin/proaudio-dlna-renderer
+		$(TARGET_DIR)/usr/libexec/proaudio-player/dlna-renderer.sh
 endef
 else
 define PROAUDIO_PLAYER_NATIVE_INSTALL_DLNA_CONFIG
-	rm -f $(TARGET_DIR)/usr/bin/proaudio-dlna-renderer
+	rm -f $(TARGET_DIR)/usr/libexec/proaudio-player/dlna-renderer.sh
 endef
 endif
 
@@ -135,8 +134,16 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/proaudio-player-native
 	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/config.yaml
+	$(INSTALL) -D -m 0644 $(@D)/config/audio.env.example \
+		$(TARGET_DIR)/etc/proaudio-player-alert/audio.env
 	$(INSTALL) -D -m 0644 $(@D)/config/mpd.conf \
 		$(TARGET_DIR)/etc/proaudio-player-alert/mpd.conf
+	$(INSTALL) -D -m 0644 $(@D)/config/wireplumber/51-proaudio-soft-mixer.conf \
+		$(TARGET_DIR)/etc/wireplumber/wireplumber.conf.d/51-proaudio-soft-mixer.conf
+	$(INSTALL) -D -m 0755 $(@D)/scripts/audio-buses.sh \
+		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
+	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-audioctl \
+		$(TARGET_DIR)/usr/sbin/proaudio-player-audioctl
 	$(INSTALL) -D -m 0644 $(@D)/assets/announcements/alarm_start.mp3 \
 		$(TARGET_DIR)/usr/share/proaudio-player/announcements/alarm_start.mp3
 	$(INSTALL) -D -m 0644 $(@D)/assets/announcements/alarm_end.mp3 \
@@ -146,6 +153,9 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player.tmpfiles.conf \
 		$(TARGET_DIR)/usr/lib/tmpfiles.d/proaudio-player.conf
+	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpris.conf \
+		$(TARGET_DIR)/usr/share/dbus-1/system.d/proaudio-player-mpris.conf
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_AIRPLAY_CONFIG)
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_DLNA_CONFIG)
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_SPOTIFY_CONFIG)
