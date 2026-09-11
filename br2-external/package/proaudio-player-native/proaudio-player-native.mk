@@ -20,6 +20,11 @@ define PROAUDIO_PLAYER_NATIVE_USERS
 	proaudio-player -1 proaudio-player -1 * /var/lib/proaudio-player /bin/false audio,dialout,pipewire ProAudio Player
 endef
 
+define PROAUDIO_PLAYER_NATIVE_PERMISSIONS
+	/etc/proaudio-player-alert/config.yaml f 640 root proaudio-player - - - - -
+	/etc/proaudio-player-alert/alerts-token f 600 proaudio-player proaudio-player - - - - -
+endef
+
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY),y)
 PROAUDIO_PLAYER_NATIVE_DEPENDENCIES += proaudio-shairport-sync
 endif
@@ -113,6 +118,8 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/proaudio-player-limiter
 	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/config.yaml
+	$(INSTALL) -D -m 0600 /dev/null \
+		$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token
 	$(INSTALL) -D -m 0644 $(@D)/config/audio.env.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/audio.env
 	$(INSTALL) -D -m 0644 $(@D)/config/mpd.conf \

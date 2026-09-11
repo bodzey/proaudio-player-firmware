@@ -1,7 +1,8 @@
 [Unit]
 Description=Watch physical audio outputs and recover ProAudio routing
 After=proaudio-player-buses.service pipewire.service pipewire-pulse.service wireplumber.service
-Requires=pipewire.service pipewire-pulse.service wireplumber.service
+Requires=proaudio-player-buses.service pipewire.service pipewire-pulse.service wireplumber.service
+PartOf=proaudio-player-buses.service
 
 [Service]
 Type=simple
