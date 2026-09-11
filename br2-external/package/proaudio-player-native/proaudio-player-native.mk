@@ -16,6 +16,10 @@ PROAUDIO_PLAYER_NATIVE_DEPENDENCIES = \
 	pulseaudio \
 	host-pkgconf
 
+define PROAUDIO_PLAYER_NATIVE_USERS
+	proaudio-player -1 proaudio-player -1 * /var/lib/proaudio-player /bin/false audio,dialout,pipewire ProAudio Player
+endef
+
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY),y)
 PROAUDIO_PLAYER_NATIVE_DEPENDENCIES += proaudio-shairport-sync
 endif
