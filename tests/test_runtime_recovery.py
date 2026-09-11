@@ -43,4 +43,4 @@ def test_spotify_discovery_malformed_blob_forces_clean_receiver_restart():
 
     assert "DiscoveryEvent::ServerError" in patch
     assert "Spotify discovery stream terminated" in patch
-    assert "encrypted_blob_len < 16" in patch
+    assert "encrypted_blob_len < 36" in patch
