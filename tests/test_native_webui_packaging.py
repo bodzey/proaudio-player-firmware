@@ -17,8 +17,13 @@ def test_webui_is_an_explicit_optional_package_separate_from_native_player():
     assert "package/proaudio-webui/Config.in" in external_config
     assert "BR2_PACKAGE_PROAUDIO_WEBUI" in webui_config
     assert "default y" not in webui_config
-    assert "sources/proaudio-player-native/webui" in webui_makefile
-    assert "git submodule update --init --recursive" in webui_makefile
+    assert (
+        "PROAUDIO_WEBUI_SITE = $(BR2_EXTERNAL_PROAUDIO_PATH)/../sources/proaudio-player-webui"
+        in webui_makefile
+    )
+    assert "PROAUDIO_WEBUI_SITE_METHOD = local" in webui_makefile
+    assert "package-lock.json" in webui_makefile
+    assert "npm ci --include=dev" in webui_makefile
     assert "/usr/share/proaudio-player/webui" in webui_makefile
 
     # This development image explicitly opts into the frontend.

@@ -6,10 +6,10 @@ PACKAGE = ROOT / "br2-external/package/proaudio-player"
 SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
 
 
-def test_core_submodule_uses_protocol_relative_repository_url():
+def test_native_submodule_uses_protocol_relative_repository_url():
     modules = (ROOT / ".gitmodules").read_text(encoding="utf-8")
-    assert "path = sources/proaudio-player" in modules
-    assert "url = ../proaudio_player.git" in modules
+    assert "path = sources/proaudio-player-native" in modules
+    assert "url = ../proaudio-player-native.git" in modules
 
 
 def test_firmware_installs_core_media_and_wireplumber_rule():
