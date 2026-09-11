@@ -46,6 +46,8 @@ def test_native_audio_runtime_packages_final_limiter_and_generic_configs():
     assert "scripts/proaudio-player-limiter-start" in native_makefile
     assert "proaudio-player-limiter.service" in native_makefile
     assert "proaudio-player-limiter.path" in native_makefile
+    assert "scripts/proaudio-player-output-watch" in native_makefile
+    assert "proaudio-player-output-watch.service" in native_makefile
     assert "config/audio.env.example" in native_makefile
     assert "scripts/audio-buses.sh" in native_makefile
     assert "config/wireplumber/51-proaudio-soft-mixer.conf" in native_makefile
@@ -60,10 +62,15 @@ def test_native_audio_runtime_packages_final_limiter_and_generic_configs():
     limiter_path = (PLAYER_PACKAGE / "proaudio-player-limiter.path").read_text(
         encoding="utf-8"
     )
+    output_watch_service = (
+        PLAYER_PACKAGE / "proaudio-player-output-watch.service"
+    ).read_text(encoding="utf-8")
     assert "After=proaudio-player-buses.service" in limiter_service
     assert "Restart=on-failure" in limiter_service
     assert "proaudio-player-limiter-start" in limiter_service
     assert "/run/proaudio-player/proaudio-player-bus-modules" in limiter_path
+    assert "proaudio-player-output-watch" in output_watch_service
+    assert "Restart=always" in output_watch_service
 
 
 def test_native_audio_topology_has_one_final_physical_output_path():
@@ -85,3 +92,23 @@ def test_native_audio_topology_has_one_final_physical_output_path():
     assert "MASTER_SINK=proaudio_player_master" in audio_env
     assert "LIMITER_ENABLED=true" in audio_env
     assert "LIMITER_CEILING_DB=-1.0" in audio_env
+
+
+def test_native_audio_keeps_physical_gain_at_unity_and_never_unmutes_during_probe():
+    buses = (
+        ROOT / "sources/proaudio-player-native/scripts/audio-buses.sh"
+    ).read_text(encoding="utf-8")
+    audio_env = (
+        ROOT / "sources/proaudio-player-native/config/audio.env.example"
+    ).read_text(encoding="utf-8")
+
+    assert 'OUTPUT_VOLUME_PERCENT="${OUTPUT_VOLUME_PERCENT:-100}"' in buses
+    assert '[[ "$OUTPUT_VOLUME_PERCENT" != "100" ]]' in buses
+    assert 'pactl set-sink-volume "$physical" 100%' in buses
+    assert "OUTPUT_VOLUME_PERCENT=100" in audio_env
+
+    # Multi-channel hardware controls are explicitly re-applied, but the ALSA
+    # playback switch must remain untouched while the physical sink is muted.
+    assert "reapply_playback_channels" in buses
+    assert 'sset "$control" "$raw_values"' in buses
+    assert 'sset "$control" "$raw_values" unmute' not in buses
