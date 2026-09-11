@@ -114,8 +114,6 @@ endif
 define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/target/$(RUSTC_TARGET_NAME)/release/proaudio-player-native \
 		$(TARGET_DIR)/usr/bin/proaudio-player-native
-	$(INSTALL) -D -m 0755 $(@D)/target/$(RUSTC_TARGET_NAME)/release/proaudio-player-limiter \
-		$(TARGET_DIR)/usr/bin/proaudio-player-limiter
 	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml.example \
 		$(TARGET_DIR)/etc/proaudio-player-alert/config.yaml
 	$(INSTALL) -D -m 0600 /dev/null \
@@ -128,8 +126,6 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/wireplumber/wireplumber.conf.d/51-proaudio-soft-mixer.conf
 	$(INSTALL) -D -m 0755 $(@D)/scripts/audio-buses.sh \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
-	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-limiter-start \
-		$(TARGET_DIR)/usr/libexec/proaudio-player/proaudio-player-limiter-start
 	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-output-watch \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/proaudio-player-output-watch
 	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-audioctl \
@@ -165,15 +161,6 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-output-watch.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-output-watch.service
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-limiter.service \
-		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.service
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-limiter-restart.service \
-		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter-restart.service
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-limiter.path \
-		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.path
-	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-mpd.service
 	$(INSTALL) -D -m 0644 $(@D)/systemd/proaudio-player-native.service \
@@ -193,10 +180,6 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-audio-output.path
 	ln -sf /usr/lib/systemd/system/proaudio-player-output-watch.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-output-watch.service
-	ln -sf /usr/lib/systemd/system/proaudio-player-limiter.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-limiter.service
-	ln -sf /usr/lib/systemd/system/proaudio-player-limiter.path \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-limiter.path
 	ln -sf /usr/lib/systemd/system/proaudio-player-mpd.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-mpd.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-native.service \
