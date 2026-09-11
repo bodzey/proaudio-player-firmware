@@ -145,6 +145,8 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
 	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-limiter-start \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/proaudio-player-limiter-start
+	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-output-watch \
+		$(TARGET_DIR)/usr/libexec/proaudio-player/proaudio-player-output-watch
 	$(INSTALL) -D -m 0755 $(@D)/scripts/proaudio-player-audioctl \
 		$(TARGET_DIR)/usr/sbin/proaudio-player-audioctl
 	$(INSTALL) -D -m 0644 $(@D)/assets/announcements/alarm_start.mp3 \
@@ -175,6 +177,9 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-audio-output.path \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-audio-output.path
 	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-output-watch.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-output-watch.service
+	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-limiter.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.service
 	$(INSTALL) -D -m 0644 \
@@ -201,6 +206,8 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-buses.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-audio-output.path \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-audio-output.path
+	ln -sf /usr/lib/systemd/system/proaudio-player-output-watch.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-output-watch.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-limiter.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-limiter.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-limiter.path \
