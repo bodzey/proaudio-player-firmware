@@ -118,3 +118,31 @@ def test_native_audio_keeps_physical_gain_at_unity_and_never_unmutes_during_prob
     assert "reapply_playback_channels" in buses
     assert 'sset "$control" "$raw_values"' in buses
     assert 'sset "$control" "$raw_values" unmute' not in buses
+
+
+def test_native_and_webui_share_authoritative_realtime_audio_contract():
+    backend = (
+        ROOT / "sources/proaudio-player-native/src/api/backend.rs"
+    ).read_text(encoding="utf-8")
+    webui_types = (
+        ROOT / "sources/proaudio-player-webui/src/api/types.ts"
+    ).read_text(encoding="utf-8")
+    mixer = (
+        ROOT / "sources/proaudio-player-webui/src/features/mixer/MixerPanel.tsx"
+    ).read_text(encoding="utf-8")
+
+    # Realtime status is software-only: MASTER is authoritative over SSE, while
+    # expensive ALSA probing is reserved for explicit diagnostics endpoints.
+    assert '"master": master' in backend
+    assert '"hardware": Value::Null' in backend
+    assert "primary_hardware_mixer" not in backend
+    assert '"audio_hardware_read_only"' in backend
+    assert '"audio_settings"' in backend
+    assert '"meters"' in backend
+
+    # The browser contract must describe the same fields and prefer SSE state for
+    # MASTER/ALERT instead of polling the mixer to reconstruct realtime state.
+    assert "master: AudioLevel | null;" in webui_types
+    assert "capabilities: AudioOutputCapabilities;" in webui_types
+    assert "props.status?.audio_levels.master" in mixer
+    assert "lastStatusSignature" not in mixer
