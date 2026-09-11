@@ -112,6 +112,8 @@ endef
 endif
 
 define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
+	rm -f $(TARGET_DIR)/usr/bin/proaudio-player-limiter
+	rm -f $(TARGET_DIR)/usr/libexec/proaudio-player/proaudio-player-limiter-start
 	$(INSTALL) -D -m 0755 $(@D)/target/$(RUSTC_TARGET_NAME)/release/proaudio-player-native \
 		$(TARGET_DIR)/usr/bin/proaudio-player-native
 	$(INSTALL) -D -m 0644 $(@D)/config/config.yaml.example \
@@ -148,6 +150,11 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 endef
 
 define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
+	rm -f $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-limiter.service
+	rm -f $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-limiter.path
+	rm -f $(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.service
+	rm -f $(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter-restart.service
+	rm -f $(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.path
 	$(INSTALL) -D -m 0644 \
 		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-buses.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-buses.service
