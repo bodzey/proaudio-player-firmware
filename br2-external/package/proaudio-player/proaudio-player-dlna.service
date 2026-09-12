@@ -1,7 +1,7 @@
 [Unit]
 Description=DLNA/UPnP renderer for ProAudio Player
 After=network.target proaudio-player-buses.service
-Requires=proaudio-player-buses.service
+Wants=proaudio-player-buses.service
 
 [Service]
 Type=simple
