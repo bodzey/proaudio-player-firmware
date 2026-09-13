@@ -1,14 +1,21 @@
 #!/bin/sh
 set -eu
 
-# gmediarender is deliberately not the LAN-facing UPnP device. The native daemon
-# owns discovery, AVTransport and RenderingControl, while this process is only the
-# local decoder/transport worker. Binding to loopback prevents a duplicate renderer
-# from appearing in controllers and keeps remote volume control out of GStreamer.
+interface="${DLNA_INTERFACE:-proaudio-dlna}"
+[ "$interface" != "lo" ] || {
+    echo "DLNA: loopback не підтримується libupnp" >&2
+    exit 1
+}
+[ -d "/sys/class/net/$interface" ] || {
+    echo "DLNA: внутрішній інтерфейс $interface не створено" >&2
+    exit 1
+}
+
+echo "DLNA: запуск transport worker на внутрішньому інтерфейсі $interface" >&2
 exec /usr/bin/gmediarender \
-    --interface-name=lo \
+    --interface-name="$interface" \
     --port=49494 \
-    --friendly-name="ProAudio Player Transport" \
+    --friendly-name="ProAudio Player Internal Transport" \
     --gstout-audiosink=pulsesink \
     --gstout-initial-volume-db=0.0 \
     --gstout-buffer-duration=0
