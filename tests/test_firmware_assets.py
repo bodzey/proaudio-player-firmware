@@ -115,3 +115,10 @@ def test_mpd_first_boot_runtime_files_exist_before_service_start():
             f"f /var/lib/proaudio-player-alert/mpd/{name} "
             "0640 proaudio-player proaudio-player -"
         ) in tmpfiles
+
+
+def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
+    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
+    assert 'f"--dhcp-option=114,http://{addr}/"' in daemon
+    assert "urllib.parse.urlsplit(self.path).path" in daemon
+    assert "self._redirect_setup()" in daemon
