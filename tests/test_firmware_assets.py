@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "br2-external/package/proaudio-player"
 SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
+NETWORK_PACKAGE = ROOT / "br2-external/package/proaudio-networkd"
 
 
 def test_native_submodule_uses_protocol_relative_repository_url():
@@ -73,3 +74,44 @@ def test_audio_bus_service_retries_if_hardware_is_late():
     assert "Type=oneshot" in service
     assert "Restart=on-failure" in service
     assert "RestartSec=5" in service
+
+
+def test_unplugged_ethernet_does_not_degrade_boot():
+    network = (NETWORK_PACKAGE / "10-proaudio-ethernet.network").read_text(
+        encoding="utf-8"
+    )
+    assert "[Link]\nRequiredForOnline=no" in network
+    assert "[Network]\nDHCP=ipv4" in network
+
+
+def test_avahi_is_the_only_mdns_responder():
+    resolved = (NETWORK_PACKAGE / "10-proaudio-resolved.conf").read_text(
+        encoding="utf-8"
+    )
+    makefile = (NETWORK_PACKAGE / "proaudio-networkd.mk").read_text(
+        encoding="utf-8"
+    )
+    assert "[Resolve]\nMulticastDNS=no\nLLMNR=no" in resolved
+    assert "resolved.conf.d/10-proaudio.conf" in makefile
+
+
+def test_wifi_regdomain_is_early_and_provisioning_avoids_duplicate_scan():
+    cmdline = (
+        ROOT / "br2-external/board/raspberrypi4-64/cmdline.txt"
+    ).read_text(encoding="utf-8")
+    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
+
+    assert "cfg80211.ieee80211_regdom=UA" in cmdline
+    assert '"device", "wifi", "rescan"' not in daemon
+    assert '"--rescan", "auto"' in daemon
+
+
+def test_mpd_first_boot_runtime_files_exist_before_service_start():
+    tmpfiles = (
+        ROOT / "br2-external/package/proaudio-player/proaudio-player.tmpfiles.conf"
+    ).read_text(encoding="utf-8")
+    for name in ("database", "state"):
+        assert (
+            f"f /var/lib/proaudio-player-alert/mpd/{name} "
+            "0640 proaudio-player proaudio-player -"
+        ) in tmpfiles
