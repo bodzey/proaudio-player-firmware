@@ -122,3 +122,26 @@ def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
     assert 'f"--dhcp-option=114,http://{addr}/"' in daemon
     assert "urllib.parse.urlsplit(self.path).path" in daemon
     assert "self._redirect_setup()" in daemon
+
+
+def test_first_boot_storage_growth_is_device_agnostic_and_ordered():
+    script = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
+        "proaudio-player/grow-rootfs"
+    ).read_text(encoding="utf-8")
+    service = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/lib/systemd/"
+        "system/proaudio-grow-rootfs.service"
+    ).read_text(encoding="utf-8")
+
+    assert "findmnt -n -o SOURCE,FSTYPE /" in script
+    assert "/sys/class/block/$partition_name/partition" in script
+    assert 'disk=/dev/$disk_name' in script
+    assert "/dev/mmcblk0" not in script
+    assert 'case "$root_fstype" in' in script
+    assert 'resize2fs "$root_partition"' in script
+    assert "root partition is not last" in script
+    assert "Before=multi-user.target" in service
+    assert "ConditionPathExists=!/var/lib/proaudio-storage-grow/done" in service
