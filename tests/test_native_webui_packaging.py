@@ -177,7 +177,8 @@ def test_persistent_state_and_spotify_receiver_are_runtime_safe():
     assert "ExecStartPre=/bin/rm -rf /run/proaudio-player/spotifyd" in spotify_service
     assert "ExecStartPre=/bin/mkdir -p /run/proaudio-player/spotifyd" in spotify_service
 
-    # Losing /status must never fabricate MUSIC = 0%; /audio/mixer remains a valid
-    # authoritative fallback while the realtime status channel recovers.
-    assert "return mixerState()?.music ?? levelFromPercent(100, false);" in mixer
+    # Losing /status must never fabricate a MUSIC level. /audio/mixer remains the
+    # authoritative fallback; controls stay disabled until one source responds.
+    assert "return mixerState()?.music;" in mixer
+    assert "level('music') === undefined" in mixer
     assert "if (muted !== undefined)" in mixer
