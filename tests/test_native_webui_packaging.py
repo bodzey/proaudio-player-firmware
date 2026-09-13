@@ -36,17 +36,17 @@ def test_webui_is_an_explicit_optional_package_separate_from_native_player():
     assert "/webui" not in native_makefile.lower()
 
 
-def test_native_audio_runtime_packages_final_limiter_and_generic_configs():
+def test_native_audio_runtime_packages_unity_graph_and_generic_configs():
     native_makefile = (NATIVE_PACKAGE / "proaudio-player-native.mk").read_text(
         encoding="utf-8"
     )
     native_config = (NATIVE_PACKAGE / "Config.in").read_text(encoding="utf-8")
 
-    assert "release/proaudio-player-limiter" in native_makefile
-    assert "/usr/bin/proaudio-player-limiter" in native_makefile
-    assert "scripts/proaudio-player-limiter-start" in native_makefile
-    assert "proaudio-player-limiter.service" in native_makefile
-    assert "proaudio-player-limiter.path" in native_makefile
+    assert "release/proaudio-player-limiter" not in native_makefile
+    assert "scripts/proaudio-player-limiter-start" not in native_makefile
+    assert "rm -f $(TARGET_DIR)/usr/bin/proaudio-player-limiter" in native_makefile
+    assert "rm -f $(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.service" in native_makefile
+    assert "rm -f $(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.path" in native_makefile
     assert "scripts/proaudio-player-output-watch" in native_makefile
     assert "proaudio-player-output-watch.service" in native_makefile
     assert "config/audio.env.example" in native_makefile
@@ -70,19 +70,9 @@ def test_native_audio_runtime_packages_final_limiter_and_generic_configs():
     assert "board/raspberrypi4-64" not in native_makefile
     assert "$(@D)/config/spotifyd.conf" in native_makefile
 
-    limiter_service = (PLAYER_PACKAGE / "proaudio-player-limiter.service").read_text(
-        encoding="utf-8"
-    )
-    limiter_path = (PLAYER_PACKAGE / "proaudio-player-limiter.path").read_text(
-        encoding="utf-8"
-    )
     output_watch_service = (
         PLAYER_PACKAGE / "proaudio-player-output-watch.service"
     ).read_text(encoding="utf-8")
-    assert "After=proaudio-player-buses.service" in limiter_service
-    assert "Restart=on-failure" in limiter_service
-    assert "proaudio-player-limiter-start" in limiter_service
-    assert "/run/proaudio-player/proaudio-player-bus-modules" in limiter_path
     assert "proaudio-player-output-watch" in output_watch_service
     assert "Restart=always" in output_watch_service
 
@@ -96,16 +86,19 @@ def test_native_audio_topology_has_one_final_physical_output_path():
     ).read_text(encoding="utf-8")
 
     assert "MASTER_SINK=\"${MASTER_SINK:-proaudio_player_master}\"" in buses
-    assert 'music_loop="$(load_loopback "$MUSIC_SINK" "$MASTER_SINK")"' in buses
-    assert 'alert_loop="$(load_loopback "$ALERT_SINK" "$MASTER_SINK")"' in buses
-    assert 'load_loopback "$MUSIC_SINK" "$physical"' not in buses
-    assert 'load_loopback "$ALERT_SINK" "$physical"' not in buses
+    assert 'load_loopback_into music_loop "$MUSIC_SINK" "$MASTER_SINK"' in buses
+    assert 'load_loopback_into alert_loop "$ALERT_SINK" "$MASTER_SINK"' in buses
+    assert 'load_loopback_into output_loop "$MASTER_SINK" "$output_target"' in buses
+    assert 'PARKING_SINK="${PARKING_SINK:-proaudio_player_parking}"' in buses
+    assert 'GRAPH_UNITY_DB="0.0"' in buses
+    assert "proaudio-player-final-output" in buses
 
     # Generic AUTO selection must not privilege a hardware bus such as USB.
     assert "alsa_output\\.usb" not in buses
     assert "MASTER_SINK=proaudio_player_master" in audio_env
-    assert "LIMITER_ENABLED=true" in audio_env
-    assert "LIMITER_CEILING_DB=-1.0" in audio_env
+    assert "PARKING_SINK=proaudio_player_parking" in audio_env
+    assert "OUTPUT_HEADROOM_DB" not in audio_env
+    assert "LIMITER_" not in audio_env
 
 
 def test_native_audio_keeps_physical_gain_at_unity_and_never_unmutes_during_probe():
