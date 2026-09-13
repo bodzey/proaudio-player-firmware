@@ -1,8 +1,8 @@
 [Unit]
-Description=Expand ProAudio root filesystem to fill the SD card
+Description=Expand ProAudio writable storage to fill the boot device
 After=local-fs.target
-Before=proaudio-player-buses.service proaudio-player-native.service proaudio-player-spotifyd.service
-ConditionPathExists=!/var/lib/proaudio-rootfs-grow/done
+Before=multi-user.target proaudio-player-buses.service proaudio-player-native.service proaudio-player-spotifyd.service
+ConditionPathExists=!/var/lib/proaudio-storage-grow/done
 
 [Service]
 Type=oneshot
