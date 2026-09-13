@@ -204,6 +204,33 @@ Runtime media paths:
 /var/lib/proaudio-player-alert/media/minute_silence.mp3
 ```
 
+## First-boot storage expansion
+
+The generated SD-card image remains compact (the root filesystem image is 1024 MiB).
+On the first boot, `proaudio-grow-rootfs.service` discovers the mounted root
+partition and its parent device, expands the final ext2/ext3/ext4 partition to
+the remaining device capacity, and requests one automatic reboot. On the next
+boot it expands the filesystem online and records completion.
+
+The discovery does not assume `/dev/mmcblk0`: direct root partitions on SD,
+eMMC, NVMe and USB/SATA storage use the same mechanism. For safety, partition
+tables with another partition after the root partition, device-mapper roots
+and unsupported filesystems are left unchanged and reported in the journal.
+
+The additional capacity becomes available to both the local library under
+`/srv/music` and persistent player state and announcement media under
+`/var/lib/proaudio-player-alert`.
+
+Verification after the automatic first-boot reboot:
+
+```bash
+findmnt /
+lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINTS
+df -h /
+systemctl status proaudio-grow-rootfs.service --no-pager
+journalctl -b -u proaudio-grow-rootfs.service --no-pager
+```
+
 ## Runtime data
 
 ```text
