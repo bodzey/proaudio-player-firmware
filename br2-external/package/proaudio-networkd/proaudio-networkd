@@ -124,9 +124,21 @@ class PortalHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
+    def _redirect_setup(self):
+        address = self.daemon.cfg["SETUP_ADDRESS"]
+        self.send_response(302)
+        self.send_header("Location", f"http://{address}/")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def do_GET(self):
         if not self._is_setup_request():
             self._redirect_player()
+            return
+        path = urllib.parse.urlsplit(self.path).path
+        if path != "/":
+            self._redirect_setup()
             return
         self._send_html(self.daemon.portal_page())
 
@@ -428,6 +440,7 @@ class NetworkDaemon:
             f"--dhcp-range={start},{end},255.255.255.0,10m",
             f"--dhcp-option=3,{addr}",
             f"--dhcp-option=6,{addr}",
+            f"--dhcp-option=114,http://{addr}/",
             f"--address=/#/{addr}",
             "--no-resolv",
             "--no-hosts",
