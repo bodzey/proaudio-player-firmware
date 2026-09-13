@@ -8,6 +8,7 @@ ConditionPathExists=!/var/lib/proaudio-storage-grow/done
 Type=oneshot
 ExecStart=/usr/libexec/proaudio-player/grow-rootfs
 RemainAfterExit=yes
+TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
