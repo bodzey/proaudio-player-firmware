@@ -145,3 +145,4 @@ def test_first_boot_storage_growth_is_device_agnostic_and_ordered():
     assert "root partition is not last" in script
     assert "Before=multi-user.target" in service
     assert "ConditionPathExists=!/var/lib/proaudio-storage-grow/done" in service
+    assert "TimeoutStartSec=0" in service
