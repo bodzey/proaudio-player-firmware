@@ -31,6 +31,4 @@ jobs:
         run: python -m pytest -q tests/test_build_tooling.py
 
       - name: Run repository-owned recovery tests
-        run: >-
-          python -m pytest -q tests/test_runtime_recovery.py
-          -k "not spotify_uses_single_generic_unity_gain_config"
+        run: python -m pytest -q tests/test_runtime_recovery.py
