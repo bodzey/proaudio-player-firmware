@@ -115,31 +115,87 @@ The native source arbiter owns ordinary-source exclusivity. The transitional `au
 
 Application services run system-wide under the dedicated `proaudio-player` account. `systemd-timesyncd` provides clock synchronization for HTTPS API access and scheduled events.
 
+## Build-host setup
+
+The repository separates privileged host setup from the firmware build:
+
+- `bootstrap-build-host.sh` installs only host tools and initializes the exact
+  submodule revisions pinned by the firmware commit;
+- `check-build-host.sh` only validates the host and never installs anything;
+- `build.sh` never uses `sudo` and performs an incremental build by default.
+
+On Debian/Ubuntu, Fedora/RHEL-compatible systems, Arch, openSUSE or Alpine:
+
+```bash
+git clone --branch feature/universal-audio-backend \
+  --recurse-submodules \
+  https://github.com/bodzey/proaudio-player-firmware.git
+cd proaudio-player-firmware
+./scripts/bootstrap-build-host.sh -y
+```
+
+Run the bootstrap without `-y` if package-manager confirmation is desired.
+Add `--with-qemu` only on a development host that needs the optional QEMU
+smoke test. The script may ask for `sudo`; the build itself must be run as a
+regular user.
+
+For an unsupported Linux distribution, or when modifying the host is
+undesirable, use the controlled Debian container (Docker or Podman):
+
+```bash
+./scripts/build-container.sh
+```
+
+The repository and Buildroot download/output caches are bind-mounted, so
+subsequent container builds remain incremental. A native Buildroot build
+requires Linux; the container route is also the supported entry point from
+macOS or Windows hosts running Linux containers.
+
+To validate an already prepared host without changing it:
+
+```bash
+./scripts/check-build-host.sh
+```
+
+Buildroot remains responsible for downloading and building its own host-side
+package tools. The bootstrap installs only the operating-system prerequisites
+needed to run Buildroot.
+
 ## Raspberry Pi 4 development build
 
-Synchronize the development branch and its pinned submodules first:
+Synchronize the development branch first:
 
 ```bash
 git switch feature/universal-audio-backend
 git pull --ff-only
-git submodule sync --recursive
-git submodule update --init --recursive
 ```
 
-Load the Raspberry Pi 4 Model B native appliance configuration. This updates
-the Buildroot configuration but does not discard already built packages:
+Build the Raspberry Pi 4 image:
 
 ```bash
-make -C upstream/buildroot \
-  BR2_EXTERNAL="$PWD/br2-external" \
-  proaudio_rpi4_64_native_defconfig
+./scripts/build.sh
 ```
 
-Build:
+This synchronizes pinned submodules, validates the host, loads the canonical
+defconfig and reuses compatible Buildroot output. It never follows a
+submodule branch with `--remote` and never cleans implicitly.
+
+After changing one of the local project components, invalidate only that
+Buildroot package before continuing the normal image build:
 
 ```bash
-make -j"$(nproc)" -C upstream/buildroot \
-  BR2_EXTERNAL="$PWD/br2-external"
+./scripts/build.sh --rebuild native
+./scripts/build.sh --rebuild webui
+./scripts/build.sh --rebuild network
+./scripts/build.sh --rebuild native --rebuild webui
+```
+
+Use `--jobs NUMBER` to control parallelism, `--configure-only` to load the
+profile without compiling, or an out-of-tree output directory to keep builds
+separate:
+
+```bash
+./scripts/build.sh --output /path/to/proaudio-rpi4-output
 ```
 
 The SD-card image is produced under:
@@ -149,13 +205,12 @@ upstream/buildroot/output/images/
 ```
 
 A full clean build is not required after ordinary firmware, player or Web UI
-changes. Use it only to recover from stale or incompatible Buildroot output
-(for example after changing toolchain/architecture or when an incremental
-build demonstrably fails):
+changes. Use it only to recover from stale or incompatible Buildroot output,
+for example after changing toolchain/architecture or when an incremental
+build demonstrably fails:
 
 ```bash
-rm -rf upstream/buildroot/output
-rm -f upstream/buildroot/.config upstream/buildroot/.config.old
+./scripts/build.sh --clean
 ```
 
 Downloaded source archives may remain in `upstream/buildroot/dl`; they are not
@@ -177,8 +232,9 @@ Expected functional state includes USB storage, USB audio, analogue Pi audio, Br
 QEMU is not the production hardware target:
 
 ```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio_qemu_aarch64_defconfig
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
+./scripts/bootstrap-build-host.sh --with-qemu
+./scripts/build.sh --profile qemu-aarch64
+./scripts/run-qemu.sh
 ```
 
 ## Player source integration
@@ -194,7 +250,7 @@ PROAUDIO_PLAYER_NATIVE_OVERRIDE_SRCDIR = /path/to/proaudio-player-native
 and rebuild with:
 
 ```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio-player-native-rebuild all
+./scripts/build.sh --rebuild native
 ```
 
 ## Announcement media
