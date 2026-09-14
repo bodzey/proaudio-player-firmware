@@ -222,7 +222,7 @@ def test_alert_media_and_runtime_controls_use_persistent_storage():
     assert '"/settings/alerts/media/{kind}"' in backend
     assert "atomic_file::write" in backend
     assert "notifications_enabled" in alerts
-    assert "pub type AlertMediaKind" in types
+    assert "export type AlertMediaKind" in types
     assert "minute_silence_enabled: boolean" in types
     assert "Файли сповіщень" in panel
     assert "Увімкнути систему сповіщень" in panel
