@@ -100,3 +100,21 @@ def test_container_builder_preserves_unprivileged_output_ownership():
     assert '"$ROOT_DIR/scripts/sync-dev-submodules.sh"' in wrapper
     assert "util-linux" in dockerfile
     assert 'ENTRYPOINT ["./scripts/build.sh", "--no-submodules"]' in dockerfile
+
+
+def test_local_native_cargo_primes_buildroot_cache_before_offline_build():
+    makefile = (
+        ROOT
+        / "br2-external/package/proaudio-player-native/proaudio-player-native.mk"
+    ).read_text(encoding="utf-8")
+
+    assert "PROAUDIO_PLAYER_NATIVE_SITE_METHOD = local" in makefile
+    assert "PROAUDIO_PLAYER_NATIVE_FETCH_CARGO_DEPENDENCIES" in makefile
+    assert "$(HOST_DIR)/bin/cargo fetch" in makefile
+    assert "--locked" in makefile
+    assert "--target $(RUSTC_TARGET_NAME)" in makefile
+    assert (
+        "PROAUDIO_PLAYER_NATIVE_PRE_BUILD_HOOKS += "
+        "PROAUDIO_PLAYER_NATIVE_FETCH_CARGO_DEPENDENCIES"
+    ) in makefile
+    assert "$(eval $(cargo-package))" in makefile
