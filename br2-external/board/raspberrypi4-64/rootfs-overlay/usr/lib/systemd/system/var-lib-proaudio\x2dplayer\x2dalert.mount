@@ -1,8 +1,10 @@
 [Unit]
 Description=Bind persistent ProAudio alert state
+DefaultDependencies=no
 Requires=proaudio-storage.service
 After=proaudio-storage.service
-Before=proaudio-storage-layout.target
+Conflicts=umount.target
+Before=proaudio-storage-layout.target umount.target
 
 [Mount]
 What=/data/player-alert

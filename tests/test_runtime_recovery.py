@@ -26,6 +26,24 @@ def test_persistent_runtime_files_are_reowned_for_native_daemon():
     assert "/data/" not in tmpfiles
 
 
+def test_bind_mounts_avoid_local_fs_ordering_cycles():
+    systemd = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/lib/systemd/system"
+    )
+    for unit in (
+        "srv-music.mount",
+        "var-lib-proaudio\\x2dplayer.mount",
+        "var-lib-proaudio\\x2dplayer\\x2dalert.mount",
+    ):
+        mount = (systemd / unit).read_text(encoding="utf-8")
+        assert "DefaultDependencies=no" in mount
+        assert "Requires=proaudio-storage.service" in mount
+        assert "After=proaudio-storage.service" in mount
+        assert "Conflicts=umount.target" in mount
+        assert "Before=proaudio-storage-layout.target umount.target" in mount
+
+
 def test_spotify_discovery_malformed_blob_forces_clean_receiver_restart():
     patch = (
         SPOTIFY_PACKAGE
