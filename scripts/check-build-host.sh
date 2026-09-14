@@ -48,8 +48,8 @@ if [[ "$ROOT_DIR" =~ [[:space:]] ]]; then
 fi
 
 required_commands=(
-    awk bash bc bison bzip2 c++ cpio file find flex flock gcc git gzip ld
-    make patch perl python3 rsync sed tar unzip wget xz
+    awk bash bc bison bzip2 c++ cmp cpio file find flex flock gcc git grep gzip
+    ld make patch perl python3 rsync sed tar unzip wget xargs xz
 )
 for command_name in "${required_commands[@]}"; do
     command -v "$command_name" >/dev/null 2>&1 || fail "Missing host command: $command_name"
@@ -91,14 +91,9 @@ fi
 
 log "Basic host tools: OK"
 
-# Buildroot owns the authoritative version and tool-behaviour checks. This
-# target does not build packages and does not require a configured image.
-make -s -C "$BUILDROOT_DIR" BR2_EXTERNAL="$BR2_EXTERNAL_DIR" dependencies
-log "Buildroot dependency check: OK"
-
 available_kib="$(df -Pk "$ROOT_DIR" | awk 'NR == 2 { print $4 }')"
 if [[ "$available_kib" =~ ^[0-9]+$ ]] && ((available_kib < 20 * 1024 * 1024)); then
     printf 'WARNING: less than 20 GiB is free on the build filesystem.\n' >&2
 fi
 
-log "Build host is ready."
+log "Basic build host is ready; configuration-specific checks run during build."

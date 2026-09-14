@@ -59,9 +59,14 @@ def test_incremental_build_requires_explicit_cleanup_and_pinned_submodules():
 def test_host_check_defers_authoritative_requirements_to_buildroot():
     script = (SCRIPTS / "check-build-host.sh").read_text(encoding="utf-8")
     assert 'command -v "$command_name"' in script
-    assert 'BR2_EXTERNAL="$BR2_EXTERNAL_DIR" dependencies' in script
+    assert "configuration-specific checks run during build" in script
+    assert " dependencies" not in script
     assert "Do not build Buildroot as root" in script
     assert "case-insensitive" in script
+
+    build = (SCRIPTS / "build.sh").read_text(encoding="utf-8")
+    assert 'make -s "${make_args[@]}" dependencies' in build
+    assert build.index('"$defconfig"') < build.index('"${make_args[@]}" dependencies')
 
 
 def test_bootstrap_supports_major_linux_package_families_and_never_builds():

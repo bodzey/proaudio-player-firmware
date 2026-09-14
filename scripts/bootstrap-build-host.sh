@@ -59,7 +59,7 @@ run_privileged() {
 }
 
 common_debian=(
-    build-essential bash bc binutils bison bzip2 ca-certificates cpio file
+    build-essential bash bc binutils bison bzip2 ca-certificates cpio diffutils file
     findutils flex gawk git gzip libncurses-dev make patch perl python3 rsync
     sed tar unzip util-linux wget which xz-utils
 )
@@ -69,7 +69,7 @@ common_fedora=(
     sed tar unzip util-linux wget which xz
 )
 common_arch=(
-    base-devel bash bc binutils bison bzip2 ca-certificates cpio file findutils
+    base-devel bash bc binutils bison bzip2 ca-certificates cpio diffutils file findutils
     flex gawk gcc git gzip ncurses patch perl python rsync sed tar unzip util-linux wget which xz
 )
 common_suse=(
@@ -78,7 +78,7 @@ common_suse=(
     sed tar unzip util-linux wget which xz
 )
 common_alpine=(
-    alpine-sdk bash bc binutils bison bzip2 ca-certificates cpio file findutils
+    alpine-sdk bash bc binutils bison bzip2 ca-certificates cpio diffutils file findutils
     flex gawk gcc g++ git gzip make ncurses-dev patch perl python3 rsync sed tar
     unzip util-linux wget xz
 )

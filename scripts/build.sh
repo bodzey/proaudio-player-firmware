@@ -160,6 +160,12 @@ fi
 printf 'Loading profile: %s (%s)\n' "$PROFILE" "$defconfig"
 make "${make_args[@]}" "$defconfig"
 
+# Buildroot exposes this target only after a configuration has been loaded.
+# It performs Buildroot's authoritative version and behaviour checks without
+# compiling firmware packages.
+make -s "${make_args[@]}" dependencies
+printf '%s\n' "Buildroot dependency check: OK"
+
 if ((CONFIGURE_ONLY)); then
     printf '%s\n' "Configuration updated; build skipped by request."
     exit 0
