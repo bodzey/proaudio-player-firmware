@@ -127,7 +127,7 @@ The repository separates privileged host setup from the firmware build:
 On Debian/Ubuntu, Fedora/RHEL-compatible systems, Arch, openSUSE or Alpine:
 
 ```bash
-git clone --branch feature/universal-audio-backend \
+git clone --branch dev \
   --recurse-submodules \
   https://github.com/bodzey/proaudio-player-firmware.git
 cd proaudio-player-firmware
@@ -166,7 +166,7 @@ needed to run Buildroot.
 Synchronize the development branch first:
 
 ```bash
-git switch feature/universal-audio-backend
+git switch dev
 git pull --ff-only
 ```
 
