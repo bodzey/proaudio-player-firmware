@@ -1,0 +1,12 @@
+[Unit]
+Description=Bind persistent ProAudio alert state
+Requires=proaudio-storage.service
+After=proaudio-storage.service
+Before=proaudio-storage-layout.target
+
+[Mount]
+What=/data/player-alert
+Where=/var/lib/proaudio-player-alert
+Type=none
+Options=bind
+DirectoryMode=0750

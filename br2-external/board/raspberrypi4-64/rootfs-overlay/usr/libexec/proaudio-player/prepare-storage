@@ -60,7 +60,12 @@ initialize_data()
 		"$data_mount/player-alert/media" "$data_mount/player-alert/mpd" \
 		"$data_mount/player-alert/mpd/playlists"
 
-	for file in provider-settings.yaml audio-settings.yaml; do
+	for file in \
+		provider-settings.yaml \
+		audio-settings.yaml \
+		state.json \
+		audio-output.env
+	do
 		if [ ! -e "$data_mount/player-alert/$file" ]; then
 			: > "$data_mount/player-alert/$file"
 		fi

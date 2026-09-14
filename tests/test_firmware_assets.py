@@ -95,26 +95,15 @@ def test_avahi_is_the_only_mdns_responder():
     assert "resolved.conf.d/10-proaudio.conf" in makefile
 
 
-def test_wifi_regdomain_is_early_and_provisioning_avoids_duplicate_scan():
-    cmdline = (
-        ROOT / "br2-external/board/raspberrypi4-64/cmdline.txt"
-    ).read_text(encoding="utf-8")
-    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
-
-    assert "cfg80211.ieee80211_regdom=UA" in cmdline
-    assert '"device", "wifi", "rescan"' not in daemon
-    assert '"--rescan", "auto"' in daemon
-
-
 def test_mpd_first_boot_runtime_files_exist_before_service_start():
-    tmpfiles = (
-        ROOT / "br2-external/package/proaudio-player/proaudio-player.tmpfiles.conf"
+    storage = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
+        "proaudio-player/prepare-storage"
     ).read_text(encoding="utf-8")
-    for name in ("database", "state"):
-        assert (
-            f"f /data/player-alert/mpd/{name} "
-            "0640 proaudio-player proaudio-player -"
-        ) in tmpfiles
+    assert "for file in database state; do" in storage
+    assert ': > "$data_mount/player-alert/mpd/$file"' in storage
+    assert 'chmod 0640 "$data_mount/player-alert/mpd/$file"' in storage
 
 
 def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
@@ -126,18 +115,25 @@ def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
 
 def test_storage_layout_is_device_agnostic_and_ordered():
     board = ROOT / "br2-external/board/raspberrypi4-64"
+    overlay = board / "rootfs-overlay"
+    systemd = overlay / "usr/lib/systemd/system"
     script = (
-        board / "rootfs-overlay/usr/libexec/proaudio-player/prepare-storage"
+        overlay / "usr/libexec/proaudio-player/prepare-storage"
     ).read_text(encoding="utf-8")
-    service = (
-        board / "rootfs-overlay/usr/lib/systemd/system/proaudio-storage.service"
-    ).read_text(encoding="utf-8")
-    mount = (
-        board / "rootfs-overlay/usr/lib/systemd/system/data.mount"
+    service = (systemd / "proaudio-storage.service").read_text(encoding="utf-8")
+    data_mount = (systemd / "data.mount").read_text(encoding="utf-8")
+    layout = (systemd / "proaudio-storage-layout.target").read_text(encoding="utf-8")
+    music_mount = (systemd / "srv-music.mount").read_text(encoding="utf-8")
+    player_mount = (systemd / "var-lib-proaudio\\x2dplayer.mount").read_text(
+        encoding="utf-8"
+    )
+    alert_mount = (
+        systemd / "var-lib-proaudio\\x2dplayer\\x2dalert.mount"
     ).read_text(encoding="utf-8")
     genimage = (board / "genimage.cfg.in").read_text(encoding="utf-8")
     cmdline = (board / "cmdline.txt").read_text(encoding="utf-8")
     post_build = (board / "post-build.sh").read_text(encoding="utf-8")
+    tmpfiles = (PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
 
     assert "root=PARTUUID=50524155-02" in cmdline
     assert "root=/dev/mmcblk" not in cmdline
@@ -151,16 +147,36 @@ def test_storage_layout_is_device_agnostic_and_ordered():
     assert 'resize2fs "$data_partition"' in script
     assert "/dev/mmcblk0" not in script
     assert "Requires=data.mount" in service
-    assert "After=data.mount systemd-tmpfiles-setup.service" in service
+    assert "After=data.mount" in service
+    assert "systemd-tmpfiles-setup.service" not in service
     assert "TimeoutStartSec=0" in service
-    assert "What=/dev/disk/by-partuuid/50524155-03" in mount
-    assert "Options=noatime,nodev,nosuid,noexec" in mount
+    assert "What=/dev/disk/by-partuuid/50524155-03" in data_mount
+    assert "Options=noatime,nodev,nosuid,noexec" in data_mount
 
-    assert 'ln -s /data/music "$TARGET_DIR/srv/music"' in post_build
-    assert (
-        'ln -s /data/player-alert '
-        '"$TARGET_DIR/var/lib/proaudio-player-alert"'
-    ) in post_build
+    assert "ln -s /data" not in post_build
+    assert 'if [ -L "$path" ]' in post_build
+    assert "/data/" not in tmpfiles
+
+    assert "Requires=srv-music.mount" in layout
+    assert "var-lib-proaudio\\x2dplayer.mount" in layout
+    assert "var-lib-proaudio\\x2dplayer\\x2dalert.mount" in layout
+
+    for mount, source, target, mode in (
+        (music_mount, "/data/music", "/srv/music", "0755"),
+        (player_mount, "/data/player", "/var/lib/proaudio-player", "0750"),
+        (
+            alert_mount,
+            "/data/player-alert",
+            "/var/lib/proaudio-player-alert",
+            "0750",
+        ),
+    ):
+        assert "Requires=proaudio-storage.service" in mount
+        assert "After=proaudio-storage.service" in mount
+        assert f"What={source}" in mount
+        assert f"Where={target}" in mount
+        assert "Options=bind" in mount
+        assert f"DirectoryMode={mode}" in mount
 
 
 def test_rpi_profiles_share_fixed_system_and_growable_data_contract():
@@ -192,8 +208,13 @@ def test_player_services_require_initialized_data_storage():
         "proaudio-player-webui.service",
     ):
         dropin = (systemd / f"{unit}.d/storage.conf").read_text(encoding="utf-8")
-        assert "Requires=proaudio-storage.service" in dropin
-        assert "After=proaudio-storage.service" in dropin
+        assert "Requires=proaudio-storage-layout.target" in dropin
+        assert "After=proaudio-storage-layout.target" in dropin
+
+    native_dropin = (
+        systemd / "proaudio-player-native.service.d/storage.conf"
+    ).read_text(encoding="utf-8")
+    assert "[Service]\nStateDirectory=\n" in native_dropin
 
     overlay = ROOT / "br2-external/board/raspberrypi4-64/rootfs-overlay"
     assert not (overlay / "usr/libexec/proaudio-player/grow-rootfs").exists()

@@ -1,0 +1,12 @@
+[Unit]
+Description=Bind persistent ProAudio music library
+Requires=proaudio-storage.service
+After=proaudio-storage.service
+Before=proaudio-storage-layout.target
+
+[Mount]
+What=/data/music
+Where=/srv/music
+Type=none
+Options=bind
+DirectoryMode=0755

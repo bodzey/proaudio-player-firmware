@@ -150,6 +150,11 @@ def test_native_and_webui_share_authoritative_realtime_audio_contract():
 
 
 def test_persistent_state_and_spotify_receiver_are_runtime_safe():
+    storage = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
+        "proaudio-player/prepare-storage"
+    ).read_text(encoding="utf-8")
     tmpfiles = (PLAYER_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
     spotify_service = (PLAYER_PACKAGE / "proaudio-player-spotifyd.service").read_text(
         encoding="utf-8"
@@ -161,13 +166,15 @@ def test_persistent_state_and_spotify_receiver_are_runtime_safe():
         ROOT / "sources/proaudio-player-webui/src/features/mixer/MixerPanel.tsx"
     ).read_text(encoding="utf-8")
 
-    for path in [
-        "/data/player-alert/state.json",
-        "/data/player-alert/provider-settings.yaml",
-        "/data/player-alert/audio-settings.yaml",
-        "/data/player-alert/audio-output.env",
-    ]:
-        assert f"z {path} 0600 proaudio-player proaudio-player -" in tmpfiles
+    for name in (
+        "state.json",
+        "provider-settings.yaml",
+        "audio-settings.yaml",
+        "audio-output.env",
+    ):
+        assert name in storage
+    assert 'chmod 0600 "$data_mount/player-alert/$file"' in storage
+    assert "/data/" not in tmpfiles
 
     # Spotify is a transport, not another user gain stage. Keep its discovery
     # credentials volatile because the arbiter deliberately restarts receivers.
@@ -208,4 +215,3 @@ def test_dlna_worker_uses_a_private_non_loopback_interface():
     assert "select BR2_PACKAGE_IPROUTE2" in legacy_config
     assert "CONFIG_DUMMY=y" in kernel_fragment
     assert "http://169.254.253.1:49494/upnp/control/rendertransport1" in native_dlna
-

@@ -1,7 +1,7 @@
 [Unit]
 Description=Prepare and expand ProAudio persistent storage
 Requires=data.mount
-After=data.mount systemd-tmpfiles-setup.service
+After=data.mount
 Before=multi-user.target
 
 [Service]

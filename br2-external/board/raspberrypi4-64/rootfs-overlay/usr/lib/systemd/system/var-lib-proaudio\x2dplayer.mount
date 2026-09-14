@@ -1,0 +1,12 @@
+[Unit]
+Description=Bind persistent ProAudio player state
+Requires=proaudio-storage.service
+After=proaudio-storage.service
+Before=proaudio-storage-layout.target
+
+[Mount]
+What=/data/player
+Where=/var/lib/proaudio-player
+Type=none
+Options=bind
+DirectoryMode=0750

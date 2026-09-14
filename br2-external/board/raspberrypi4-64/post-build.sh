@@ -15,16 +15,19 @@ rm -f "$TARGET_DIR/usr/libexec/proaudio-player/grow-rootfs"
 rm -f "$TARGET_DIR/etc/systemd/system/multi-user.target.wants/proaudio-grow-rootfs.service"
 rm -rf "$TARGET_DIR/var/lib/proaudio-storage-grow"
 
-# Keep application path contracts stable while all user-writable media and
-# player state live on the dedicated DATA filesystem.
-mkdir -p "$TARGET_DIR/data" "$TARGET_DIR/srv" "$TARGET_DIR/var/lib"
-rm -rf \
+# Older firmware builds represented persistent application paths as symlinks
+# into /data. Remove only those stale symlinks when reusing an output tree.
+# Buildroot must see normal directories while creating users/rootfs; systemd
+# bind mounts attach the persistent DATA directories at boot.
+for path in \
 	"$TARGET_DIR/srv/music" \
 	"$TARGET_DIR/var/lib/proaudio-player" \
 	"$TARGET_DIR/var/lib/proaudio-player-alert"
-ln -s /data/music "$TARGET_DIR/srv/music"
-ln -s /data/player "$TARGET_DIR/var/lib/proaudio-player"
-ln -s /data/player-alert "$TARGET_DIR/var/lib/proaudio-player-alert"
+do
+	if [ -L "$path" ]; then
+		rm -f "$path"
+	fi
+done
 
 mkdir -p "$TARGET_DIR/etc/systemd/system/multi-user.target.wants"
 rm -f "$TARGET_DIR/etc/systemd/system/local-fs.target.wants/data.mount"
