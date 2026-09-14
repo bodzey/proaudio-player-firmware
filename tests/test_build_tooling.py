@@ -13,6 +13,7 @@ BUILD_SCRIPTS = (
     SCRIPTS / "bootstrap-build-host.sh",
     SCRIPTS / "build.sh",
     SCRIPTS / "build-container.sh",
+    SCRIPTS / "sync-dev-submodules.sh",
 )
 
 
@@ -37,9 +38,7 @@ def test_build_script_help_works_without_initialized_submodules():
 def test_incremental_build_requires_explicit_cleanup_and_pinned_submodules():
     script = (SCRIPTS / "build.sh").read_text(encoding="utf-8")
     assert "rm -rf" not in script
-    assert "submodule update --init --recursive" in script
-    assert "submodule update --remote" not in script
-    assert "rev-parse --is-inside-work-tree" in script
+    assert '"$ROOT_DIR/scripts/sync-dev-submodules.sh"' in script
     assert "if ((CLEAN)); then" in script
     assert 'make "${make_args[@]}" clean' in script
     assert "proaudio-player-native-dirclean" in script
@@ -74,9 +73,18 @@ def test_bootstrap_supports_major_linux_package_families_and_never_builds():
     for package_manager in ("apt-get", "dnf", "pacman", "zypper", "apk"):
         assert package_manager in script
     assert "util-linux" in script
-    assert "submodule update --init --recursive" in script
-    assert "submodule update --remote" not in script
+    assert '"$ROOT_DIR/scripts/sync-dev-submodules.sh"' in script
     assert "make -j" not in script
+
+
+def test_source_sync_follows_dev_but_keeps_buildroot_pinned():
+    script = (SCRIPTS / "sync-dev-submodules.sh").read_text(encoding="utf-8")
+    assert "submodule update --init --recursive upstream/buildroot" in script
+    assert 'submodule update --init --remote --checkout "$path"' in script
+    assert '[[ "$branch" != dev ]]' in script
+    assert "refs/remotes/origin/dev" in script
+    assert "status --porcelain" in script
+    assert "Buildroot submodule has local changes" in script
 
 
 def test_container_builder_preserves_unprivileged_output_ownership():
@@ -84,6 +92,6 @@ def test_container_builder_preserves_unprivileged_output_ownership():
     dockerfile = (ROOT / "containers/Dockerfile.build").read_text(encoding="utf-8")
     assert '--user "$(id -u):$(id -g)"' in wrapper
     assert "EUID == 0" in wrapper
-    assert "rev-parse --is-inside-work-tree" in wrapper
+    assert '"$ROOT_DIR/scripts/sync-dev-submodules.sh"' in wrapper
     assert "util-linux" in dockerfile
     assert 'ENTRYPOINT ["./scripts/build.sh", "--no-submodules"]' in dockerfile

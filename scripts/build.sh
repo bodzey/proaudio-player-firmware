@@ -32,7 +32,7 @@ Options:
   --rebuild native|webui|network      Rebuild a changed local component; repeatable.
   --clean                             Explicitly discard Buildroot output before building.
   --configure-only                    Load defconfig but do not build the image.
-  --no-submodules                     Do not synchronize/update pinned submodules.
+  --no-submodules                     Do not update Buildroot or latest dev sources.
   -h, --help                          Show this help.
 
 The default build is incremental. --clean is never implied.
@@ -84,13 +84,7 @@ if ((CONFIGURE_ONLY && ${#rebuild_components[@]})); then
 fi
 
 if ((UPDATE_SUBMODULES)); then
-    git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
-        echo "The repository is not a Git checkout." >&2
-        exit 1
-    }
-    git -C "$ROOT_DIR" submodule sync --recursive
-    # Deliberately omit --remote: the firmware commit's gitlinks are authoritative.
-    git -C "$ROOT_DIR" submodule update --init --recursive
+    "$ROOT_DIR/scripts/sync-dev-submodules.sh"
 fi
 
 "$ROOT_DIR/scripts/check-build-host.sh"

@@ -16,13 +16,17 @@ proaudio_player_docker     proaudio-player-firmware
 Docker dev/test            Buildroot / Raspberry Pi 4 Model B
 ```
 
-This repository contains the embedded platform layer only. The native player and its factory announcement media are pinned together in the `sources/proaudio-player-native` Git submodule.
+This repository contains the embedded platform layer only. The native player
+and its factory announcement media are provided by the
+`sources/proaudio-player-native` Git submodule.
 
-Branch pairing is explicit and reproducible:
+Branch pairing is explicit:
 
 - `proaudio-player-firmware/main` is the production branch and pins a stable `proaudio-player-native/main` revision;
-- `proaudio-player-firmware/dev` is the development branch and pins a tested `proaudio-player-native/dev` revision;
-- firmware builds use the exact gitlink revision recorded by the firmware commit; do not use `git submodule update --remote` for reproducible image builds.
+- `proaudio-player-firmware/dev` follows the current `origin/dev` revisions of
+  native and Web UI before every build;
+- Buildroot always remains at the exact gitlink revision recorded by firmware,
+  so updating application sources cannot silently change the toolchain.
 
 ## Raspberry Pi 4 Model B hardware profile
 
@@ -119,8 +123,8 @@ Application services run system-wide under the dedicated `proaudio-player` accou
 
 The repository separates privileged host setup from the firmware build:
 
-- `bootstrap-build-host.sh` installs only host tools and initializes the exact
-  submodule revisions pinned by the firmware commit;
+- `bootstrap-build-host.sh` installs only host tools, initializes pinned
+  Buildroot and synchronizes the current native/Web UI `dev` sources;
 - `check-build-host.sh` only validates the host and never installs anything;
 - `build.sh` never uses `sudo` and performs an incremental build by default.
 
@@ -176,11 +180,11 @@ Build the Raspberry Pi 4 image:
 ./scripts/build.sh
 ```
 
-This synchronizes pinned submodules, validates the host, loads the canonical
-defconfig and reuses compatible Buildroot output. It never follows a
-submodule branch with `--remote` and never cleans implicitly. The wrapper
+This keeps the pinned Buildroot toolchain, updates native and Web UI to their
+current `origin/dev`, validates the host, loads the canonical defconfig and
+reuses compatible Buildroot output. It never cleans implicitly. The wrapper
 records the successfully built native/Web UI/network revisions and automatically
-invalidates only a local-source package whose pinned revision changed. An
+invalidates only a local-source package whose source revision changed. An
 existing output created before this mechanism gets one conservative refresh
 of those local packages to establish the baseline.
 

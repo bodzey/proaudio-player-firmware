@@ -124,12 +124,7 @@ else
 fi
 
 if ((UPDATE_SUBMODULES)); then
-    if ! git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        printf '%s\n' "This is not a Git checkout; cannot initialize submodules." >&2
-        exit 1
-    fi
-    git -C "$ROOT_DIR" submodule sync --recursive
-    git -C "$ROOT_DIR" submodule update --init --recursive
+    "$ROOT_DIR/scripts/sync-dev-submodules.sh"
 fi
 
 if ((EUID == 0)); then

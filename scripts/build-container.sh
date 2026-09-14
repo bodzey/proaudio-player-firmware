@@ -37,12 +37,7 @@ if [[ -z "$RUNTIME" ]]; then
 fi
 command -v "$RUNTIME" >/dev/null 2>&1 || { echo "$RUNTIME is unavailable." >&2; exit 1; }
 
-git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
-    echo "The repository is not a Git checkout." >&2
-    exit 1
-}
-git -C "$ROOT_DIR" submodule sync --recursive
-git -C "$ROOT_DIR" submodule update --init --recursive
+"$ROOT_DIR/scripts/sync-dev-submodules.sh"
 
 "$RUNTIME" build \
     --file "$ROOT_DIR/containers/Dockerfile.build" \
