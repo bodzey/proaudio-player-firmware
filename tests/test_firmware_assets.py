@@ -112,7 +112,7 @@ def test_mpd_first_boot_runtime_files_exist_before_service_start():
     ).read_text(encoding="utf-8")
     for name in ("database", "state"):
         assert (
-            f"f /var/lib/proaudio-player-alert/mpd/{name} "
+            f"f /data/player-alert/mpd/{name} "
             "0640 proaudio-player proaudio-player -"
         ) in tmpfiles
 
@@ -124,25 +124,77 @@ def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
     assert "self._redirect_setup()" in daemon
 
 
-def test_first_boot_storage_growth_is_device_agnostic_and_ordered():
+def test_storage_layout_is_device_agnostic_and_ordered():
+    board = ROOT / "br2-external/board/raspberrypi4-64"
     script = (
-        ROOT
-        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
-        "proaudio-player/grow-rootfs"
+        board / "rootfs-overlay/usr/libexec/proaudio-player/prepare-storage"
     ).read_text(encoding="utf-8")
     service = (
-        ROOT
-        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/lib/systemd/"
-        "system/proaudio-grow-rootfs.service"
+        board / "rootfs-overlay/usr/lib/systemd/system/proaudio-storage.service"
     ).read_text(encoding="utf-8")
+    mount = (
+        board / "rootfs-overlay/usr/lib/systemd/system/data.mount"
+    ).read_text(encoding="utf-8")
+    genimage = (board / "genimage.cfg.in").read_text(encoding="utf-8")
+    cmdline = (board / "cmdline.txt").read_text(encoding="utf-8")
+    post_build = (board / "post-build.sh").read_text(encoding="utf-8")
 
-    assert "findmnt -n -o SOURCE,FSTYPE /" in script
-    assert "/sys/class/block/$partition_name/partition" in script
-    assert 'disk=/dev/$disk_name' in script
+    assert "root=PARTUUID=50524155-02" in cmdline
+    assert "root=/dev/mmcblk" not in cmdline
+    assert "disk-signature = 0x50524155" in genimage
+    assert "partition data" in genimage
+    assert 'image = "data.ext4"' in genimage
+
+    assert 'findmnt -n -o SOURCE,FSTYPE "$data_mount"' in script
+    assert "SYSTEM and DATA are not on the same boot disk" in script
+    assert "DATA is not the final partition" in script
+    assert 'resize2fs "$data_partition"' in script
     assert "/dev/mmcblk0" not in script
-    assert 'case "$root_fstype" in' in script
-    assert 'resize2fs "$root_partition"' in script
-    assert "root partition is not last" in script
-    assert "Before=multi-user.target" in service
-    assert "ConditionPathExists=!/var/lib/proaudio-storage-grow/done" in service
+    assert "Requires=data.mount" in service
+    assert "After=data.mount systemd-tmpfiles-setup.service" in service
     assert "TimeoutStartSec=0" in service
+    assert "What=/dev/disk/by-partuuid/50524155-03" in mount
+    assert "Options=noatime,nodev,nosuid,noexec" in mount
+
+    assert 'ln -s /data/music "$TARGET_DIR/srv/music"' in post_build
+    assert (
+        'ln -s /data/player-alert '
+        '"$TARGET_DIR/var/lib/proaudio-player-alert"'
+    ) in post_build
+
+
+def test_rpi_profiles_share_fixed_system_and_growable_data_contract():
+    for name in ("proaudio_rpi4_64_defconfig", "proaudio_rpi4_64_native_defconfig"):
+        defconfig = (ROOT / "br2-external/configs" / name).read_text(encoding="utf-8")
+        assert 'BR2_TARGET_ROOTFS_EXT2_LABEL="PROAUDIO_SYSTEM"' in defconfig
+        assert 'BR2_TARGET_ROOTFS_EXT2_SIZE="768M"' in defconfig
+        assert "BR2_PACKAGE_E2FSPROGS_RESIZE2FS=y" in defconfig
+        assert "BR2_PACKAGE_UTIL_LINUX_BINARIES=y" in defconfig
+        assert (
+            'BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_PROAUDIO_PATH)/'
+            'board/raspberrypi4-64/post-image.sh"'
+        ) in defconfig
+
+
+def test_player_services_require_initialized_data_storage():
+    systemd = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/etc/systemd/system"
+    )
+    for unit in (
+        "proaudio-player-buses.service",
+        "proaudio-player-native.service",
+        "proaudio-player-alert.service",
+        "proaudio-player-mpd.service",
+        "proaudio-player-spotifyd.service",
+        "proaudio-player-shairport.service",
+        "proaudio-player-dlna.service",
+        "proaudio-player-webui.service",
+    ):
+        dropin = (systemd / f"{unit}.d/storage.conf").read_text(encoding="utf-8")
+        assert "Requires=proaudio-storage.service" in dropin
+        assert "After=proaudio-storage.service" in dropin
+
+    overlay = ROOT / "br2-external/board/raspberrypi4-64/rootfs-overlay"
+    assert not (overlay / "usr/libexec/proaudio-player/grow-rootfs").exists()
+    assert not (overlay / "usr/lib/systemd/system/proaudio-grow-rootfs.service").exists()

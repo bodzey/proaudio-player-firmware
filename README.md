@@ -115,27 +115,19 @@ The native source arbiter owns ordinary-source exclusivity. The transitional `au
 
 Application services run system-wide under the dedicated `proaudio-player` account. `systemd-timesyncd` provides clock synchronization for HTTPS API access and scheduled events.
 
-## Completely clean Raspberry Pi 4 development build
+## Raspberry Pi 4 development build
 
 Synchronize the development branch and its pinned submodules first:
 
 ```bash
-git switch dev
+git switch feature/universal-audio-backend
 git pull --ff-only
 git submodule sync --recursive
 git submodule update --init --recursive
 ```
 
-Remove all generated Buildroot state and the previous configuration:
-
-```bash
-rm -rf upstream/buildroot/output
-rm -f upstream/buildroot/.config upstream/buildroot/.config.old
-```
-
-Downloaded source archives may remain in `upstream/buildroot/dl`; they are not build state.
-
-Load the Raspberry Pi 4 Model B native appliance configuration:
+Load the Raspberry Pi 4 Model B native appliance configuration. This updates
+the Buildroot configuration but does not discard already built packages:
 
 ```bash
 make -C upstream/buildroot \
@@ -155,6 +147,19 @@ The SD-card image is produced under:
 ```text
 upstream/buildroot/output/images/
 ```
+
+A full clean build is not required after ordinary firmware, player or Web UI
+changes. Use it only to recover from stale or incompatible Buildroot output
+(for example after changing toolchain/architecture or when an incremental
+build demonstrably fails):
+
+```bash
+rm -rf upstream/buildroot/output
+rm -f upstream/buildroot/.config upstream/buildroot/.config.old
+```
+
+Downloaded source archives may remain in `upstream/buildroot/dl`; they are not
+build state.
 
 ## Verifying the generated kernel configuration
 
@@ -204,41 +209,64 @@ Runtime media paths:
 /var/lib/proaudio-player-alert/media/minute_silence.mp3
 ```
 
-## First-boot storage expansion
+## Storage layout and first boot
 
-The generated SD-card image remains compact (the root filesystem image is 1024 MiB).
-On the first boot, `proaudio-grow-rootfs.service` discovers the mounted root
-partition and its parent device, expands the final ext2/ext3/ext4 partition to
-the remaining device capacity, and requests one automatic reboot. On the next
-boot it expands the filesystem online and records completion.
+The Raspberry Pi image has three MBR partitions with a fixed disk signature:
 
-The discovery does not assume `/dev/mmcblk0`: direct root partitions on SD,
-eMMC, NVMe and USB/SATA storage use the same mechanism. For safety, partition
-tables with another partition after the root partition, device-mapper roots
-and unsupported filesystems are left unchanged and reported in the journal.
+- a 32 MiB FAT boot partition;
+- a fixed 768 MiB ext4 SYSTEM partition labelled `PROAUDIO_SYSTEM`;
+- a minimal 64 MiB ext4 DATA partition labelled `PROAUDIO_DATA`.
 
-The additional capacity becomes available to both the local library under
-`/srv/music` and persistent player state and announcement media under
-`/var/lib/proaudio-player-alert`.
+The kernel locates SYSTEM by its stable partition UUID
+(`PARTUUID=50524155-02`), so booting does not depend on names such as
+`/dev/mmcblk0`. The same layout works on SD, eMMC, NVMe and USB/SATA media.
+
+On first boot, `proaudio-storage.service` verifies that SYSTEM and DATA are
+direct partitions on the same boot disk and that DATA is the last partition.
+Only after those checks does it extend partition 3 to the remaining capacity.
+It then requests one automatic reboot. On the next boot it grows the ext4
+filesystem and initializes the persistent directory layout.
+
+If another partition follows DATA, the service preserves the partition table
+and uses the existing DATA size. It never guesses a device name and never
+resizes SYSTEM. This isolates firmware capacity from user media growth and
+prevents a full music library from filling the operating-system filesystem.
+
+Application paths remain stable through links into DATA:
+
+```text
+/srv/music                         -> /data/music
+/var/lib/proaudio-player           -> /data/player
+/var/lib/proaudio-player-alert     -> /data/player-alert
+```
+
+Factory announcement files live read-only under
+`/usr/share/proaudio-player/announcements`. Missing files are copied into
+DATA once; user replacements are never overwritten.
 
 Verification after the automatic first-boot reboot:
 
 ```bash
-findmnt /
-lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINTS
-df -h /
-systemctl status proaudio-grow-rootfs.service --no-pager
-journalctl -b -u proaudio-grow-rootfs.service --no-pager
+findmnt / /data
+lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTUUID,MOUNTPOINTS
+df -h / /data
+systemctl status data.mount proaudio-storage.service --no-pager
+journalctl -b -u data.mount -u proaudio-storage.service --no-pager
+readlink -f /srv/music /var/lib/proaudio-player /var/lib/proaudio-player-alert
 ```
+
+This partition-layout change requires writing the new `sdcard.img`; it is not
+an in-place package update for devices flashed with the former two-partition
+image.
 
 ## Runtime data
 
 ```text
-/etc/proaudio-player-alert/       player configuration
-/etc/proaudio-networkd.conf       Wi-Fi provisioning configuration
-/var/lib/NetworkManager/          saved NetworkManager state
-/etc/NetworkManager/system-connections/ saved Wi-Fi profiles
-/var/lib/proaudio-player-alert/   controller and MPD state
-/var/lib/proaudio-player/         Spotify state
-/srv/music/                       local music library
+/etc/proaudio-player-alert/       player configuration (SYSTEM)
+/etc/proaudio-networkd.conf       Wi-Fi provisioning configuration (SYSTEM)
+/var/lib/NetworkManager/          saved NetworkManager state (SYSTEM)
+/etc/NetworkManager/system-connections/ saved Wi-Fi profiles (SYSTEM)
+/data/player-alert/               controller, MPD state and alert media (DATA)
+/data/player/                     persistent player state (DATA)
+/data/music/                      local music library (DATA)
 ```

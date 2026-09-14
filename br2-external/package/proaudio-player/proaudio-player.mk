@@ -47,11 +47,6 @@ endef
 define PROAUDIO_PLAYER_PERMISSIONS
 	/etc/proaudio-player-alert/config.yaml f 640 root proaudio-player - - - - -
 	/etc/proaudio-player-alert/alerts-token f 600 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/media/alarm_start.mp3 f 644 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/media/alarm_end.mp3 f 644 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/media/minute_silence.mp3 f 644 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/provider-settings.yaml f 600 proaudio-player proaudio-player - - - - -
-	/var/lib/proaudio-player-alert/audio-settings.yaml f 600 proaudio-player proaudio-player - - - - -
 endef
 
 define PROAUDIO_PLAYER_INSTALL_RUNTIME_LAYOUT
@@ -68,22 +63,18 @@ define PROAUDIO_PLAYER_INSTALL_RUNTIME_LAYOUT
 		$(TARGET_DIR)/etc/proaudio-player-alert/spotifyd.conf
 	$(INSTALL) -D -m 0600 /dev/null \
 		$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token
-	$(INSTALL) -D -m 0600 /dev/null \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/provider-settings.yaml
-	$(INSTALL) -D -m 0600 /dev/null \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/audio-settings.yaml
 	$(INSTALL) -D -m 0644 \
 		$(@D)/config/wireplumber/51-proaudio-soft-mixer.conf \
 		$(TARGET_DIR)/etc/wireplumber/wireplumber.conf.d/51-proaudio-soft-mixer.conf
 	$(INSTALL) -D -m 0644 \
 		$(@D)/src/proaudio_player_alert/default_media/alarm_start.mp3 \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/alarm_start.mp3
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/alarm_start.mp3
 	$(INSTALL) -D -m 0644 \
 		$(@D)/src/proaudio_player_alert/default_media/alarm_end.mp3 \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/alarm_end.mp3
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/alarm_end.mp3
 	$(INSTALL) -D -m 0644 \
 		$(@D)/src/proaudio_player_alert/default_media/minute_silence.mp3 \
-		$(TARGET_DIR)/var/lib/proaudio-player-alert/media/minute_silence.mp3
+		$(TARGET_DIR)/usr/share/proaudio-player/announcements/minute_silence.mp3
 	$(INSTALL) -D -m 0755 $(@D)/scripts/audio-buses.sh \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/audio-buses.sh
 	$(INSTALL) -D -m 0755 \
@@ -168,3 +159,4 @@ define PROAUDIO_PLAYER_INSTALL_INIT_SYSTEMD
 endef
 
 $(eval $(python-package))
+

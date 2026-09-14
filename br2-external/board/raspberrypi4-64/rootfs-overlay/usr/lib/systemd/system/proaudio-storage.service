@@ -1,0 +1,15 @@
+[Unit]
+Description=Prepare and expand ProAudio persistent storage
+Requires=data.mount
+After=data.mount systemd-tmpfiles-setup.service
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/proaudio-player/prepare-storage
+RemainAfterExit=yes
+TimeoutStartSec=0
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,166 @@
+#!/bin/sh
+set -eu
+
+data_mount=/data
+done_marker=$data_mount/.proaudio-storage-ready
+pending_marker=$data_mount/.proaudio-partition-expanded
+minimum_free_sectors=4096
+
+log()
+{
+	printf '%s\n' "proaudio-storage: $*"
+}
+
+fail()
+{
+	log "ERROR: $*"
+	exit 1
+}
+
+require_command()
+{
+	command -v "$1" >/dev/null 2>&1 || fail "required command '$1' is unavailable"
+}
+
+resolve_partition()
+{
+	source_path=$(readlink -f "$1" 2>/dev/null || true)
+	[ -b "$source_path" ] || fail "'$1' does not resolve to a block device"
+
+	partition_name=${source_path##*/}
+	partition_sysfs=/sys/class/block/$partition_name
+	[ -f "$partition_sysfs/partition" ] || \
+		fail "'$source_path' is not a direct disk partition"
+
+	partition_real=$(readlink -f "$partition_sysfs")
+	parent_name=$(basename "$(dirname "$partition_real")")
+	[ -r "/sys/class/block/$parent_name/size" ] || \
+		fail "parent disk for '$source_path' could not be determined"
+
+	RESOLVED_PARTITION=$source_path
+	RESOLVED_PARTITION_NAME=$partition_name
+	RESOLVED_PARTITION_SYSFS=$partition_sysfs
+	RESOLVED_PARENT_NAME=$parent_name
+}
+
+initialize_data()
+{
+	mkdir -p \
+		$data_mount/music \
+		$data_mount/player \
+		$data_mount/player-alert/media \
+		$data_mount/player-alert/mpd/playlists
+
+	chown -R proaudio-player:proaudio-player \
+		$data_mount/music \
+		$data_mount/player \
+		$data_mount/player-alert
+	chmod 0755 "$data_mount/music"
+	chmod 0750 "$data_mount/player" "$data_mount/player-alert" \
+		"$data_mount/player-alert/media" "$data_mount/player-alert/mpd" \
+		"$data_mount/player-alert/mpd/playlists"
+
+	for file in provider-settings.yaml audio-settings.yaml; do
+		if [ ! -e "$data_mount/player-alert/$file" ]; then
+			: > "$data_mount/player-alert/$file"
+		fi
+		chown proaudio-player:proaudio-player "$data_mount/player-alert/$file"
+		chmod 0600 "$data_mount/player-alert/$file"
+	done
+
+	for file in database state; do
+		if [ ! -e "$data_mount/player-alert/mpd/$file" ]; then
+			: > "$data_mount/player-alert/mpd/$file"
+		fi
+		chown proaudio-player:proaudio-player "$data_mount/player-alert/mpd/$file"
+		chmod 0640 "$data_mount/player-alert/mpd/$file"
+	done
+
+	factory_dir=/usr/share/proaudio-player/announcements
+	for file in alarm_start.mp3 alarm_end.mp3 minute_silence.mp3; do
+		if [ -f "$factory_dir/$file" ] && \
+		   [ ! -e "$data_mount/player-alert/media/$file" ]; then
+			cp "$factory_dir/$file" "$data_mount/player-alert/media/$file"
+			chown proaudio-player:proaudio-player "$data_mount/player-alert/media/$file"
+			chmod 0644 "$data_mount/player-alert/media/$file"
+		fi
+	done
+
+	touch "$done_marker"
+	sync
+}
+
+[ -e "$done_marker" ] && exit 0
+
+for command_name in findmnt sfdisk resize2fs; do
+	require_command "$command_name"
+done
+
+set -- $(findmnt -n -o SOURCE,FSTYPE "$data_mount")
+data_source=${1:-}
+data_fstype=${2:-}
+[ "$data_fstype" = ext4 ] || fail "'$data_mount' must be an ext4 filesystem"
+
+set -- $(findmnt -n -o SOURCE,FSTYPE /)
+root_source=${1:-}
+root_fstype=${2:-}
+[ "$root_fstype" = ext4 ] || fail "root filesystem must be ext4"
+
+resolve_partition "$data_source"
+data_partition=$RESOLVED_PARTITION
+data_partition_name=$RESOLVED_PARTITION_NAME
+data_partition_sysfs=$RESOLVED_PARTITION_SYSFS
+disk_name=$RESOLVED_PARENT_NAME
+disk=/dev/$disk_name
+
+resolve_partition "$root_source"
+[ "$RESOLVED_PARENT_NAME" = "$disk_name" ] || \
+	fail "SYSTEM and DATA are not on the same boot disk"
+
+data_partition_number=$(cat "$data_partition_sysfs/partition")
+data_partition_start=$(cat "$data_partition_sysfs/start")
+data_partition_sectors=$(cat "$data_partition_sysfs/size")
+disk_sectors=$(cat "/sys/class/block/$disk_name/size")
+data_partition_end=$((data_partition_start + data_partition_sectors))
+
+# Never rewrite a table when DATA is not the final partition. The player can
+# still run on the existing DATA capacity, which keeps custom hardware safe.
+for candidate in /sys/class/block/*; do
+	[ -f "$candidate/partition" ] || continue
+	candidate_name=${candidate##*/}
+	[ "$candidate_name" = "$data_partition_name" ] && continue
+	candidate_real=$(readlink -f "$candidate")
+	candidate_parent=$(basename "$(dirname "$candidate_real")")
+	[ "$candidate_parent" = "$disk_name" ] || continue
+	candidate_start=$(cat "$candidate/start")
+	if [ "$candidate_start" -gt "$data_partition_start" ]; then
+		log "DATA is not the final partition on '$disk'; preserving the partition table"
+		resize2fs "$data_partition"
+		initialize_data
+		exit 0
+	fi
+done
+
+unused_sectors=$((disk_sectors - data_partition_end))
+if [ "$unused_sectors" -gt "$minimum_free_sectors" ]; then
+	if [ -e "$pending_marker" ]; then
+		fail "partition expansion is still not visible after reboot"
+	fi
+
+	log "expanding DATA partition '$data_partition' to fill '$disk'"
+	printf ',\n' | sfdisk --no-reread -N "$data_partition_number" "$disk"
+	touch "$pending_marker"
+	sync
+	log "partition table updated; requesting the required one-time reboot"
+	systemctl --no-block reboot
+	# Keep dependent player services blocked until systemd executes the reboot.
+	while :; do
+		sleep 60
+	done
+fi
+
+log "expanding the DATA filesystem on '$data_partition'"
+resize2fs "$data_partition"
+rm -f "$pending_marker"
+initialize_data
+log "persistent storage is ready"

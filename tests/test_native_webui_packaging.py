@@ -162,10 +162,10 @@ def test_persistent_state_and_spotify_receiver_are_runtime_safe():
     ).read_text(encoding="utf-8")
 
     for path in [
-        "/var/lib/proaudio-player-alert/state.json",
-        "/var/lib/proaudio-player-alert/provider-settings.yaml",
-        "/var/lib/proaudio-player-alert/audio-settings.yaml",
-        "/var/lib/proaudio-player-alert/audio-output.env",
+        "/data/player-alert/state.json",
+        "/data/player-alert/provider-settings.yaml",
+        "/data/player-alert/audio-settings.yaml",
+        "/data/player-alert/audio-output.env",
     ]:
         assert f"z {path} 0600 proaudio-player proaudio-player -" in tmpfiles
 
@@ -208,3 +208,4 @@ def test_dlna_worker_uses_a_private_non_loopback_interface():
     assert "select BR2_PACKAGE_IPROUTE2" in legacy_config
     assert "CONFIG_DUMMY=y" in kernel_fragment
     assert "http://169.254.253.1:49494/upnp/control/rendertransport1" in native_dlna
+
