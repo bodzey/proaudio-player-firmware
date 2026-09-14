@@ -40,7 +40,8 @@ def test_incremental_build_requires_explicit_cleanup_and_pinned_submodules():
     assert "rm -rf" not in script
     assert '"$ROOT_DIR/scripts/sync-dev-submodules.sh"' in script
     assert "if ((CLEAN)); then" in script
-    assert 'make "${make_args[@]}" clean' in script
+    assert 'make "${make_args[@]}" distclean' in script
+    assert 'make "${make_args[@]}" clean' not in script
     assert "proaudio-player-native-dirclean" in script
     assert "proaudio-webui-dirclean" in script
     assert "proaudio-networkd-dirclean" in script

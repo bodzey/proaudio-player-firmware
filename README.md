@@ -221,8 +221,9 @@ build demonstrably fails:
 ./scripts/build.sh --clean
 ```
 
-Downloaded source archives may remain in `upstream/buildroot/dl`; they are not
-build state.
+`--clean` runs Buildroot `distclean`, reloads the canonical profile and then
+rebuilds every selected package. Downloaded source archives in `dl/` are kept;
+they are an input cache rather than compiled build state.
 
 ## Verifying the generated kernel configuration
 

@@ -30,7 +30,7 @@ Options:
   -j, --jobs NUMBER                   Parallel build jobs (default: host CPU count).
   -o, --output DIRECTORY              Use a separate Buildroot output directory.
   --rebuild native|webui|network      Rebuild a changed local component; repeatable.
-  --clean                             Explicitly discard Buildroot output before building.
+  --clean                             Discard all output/config and rebuild from scratch.
   --configure-only                    Load defconfig but do not build the image.
   --no-submodules                     Do not update Buildroot or latest dev sources.
   -h, --help                          Show this help.
@@ -154,8 +154,8 @@ if ((!CLEAN && had_existing_config)); then
 fi
 
 if ((CLEAN)); then
-    printf '%s\n' "Cleaning Buildroot output by explicit request..."
-    make "${make_args[@]}" clean
+    printf '%s\n' "Removing all Buildroot output and configuration by explicit request..."
+    make "${make_args[@]}" distclean
 fi
 
 printf 'Loading profile: %s (%s)\n' "$PROFILE" "$defconfig"
