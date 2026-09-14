@@ -12,6 +12,15 @@ CLEAN=0
 CONFIGURE_ONLY=0
 rebuild_components=()
 
+append_rebuild_component() {
+    local candidate="$1"
+    local existing
+    for existing in "${rebuild_components[@]}"; do
+        [[ "$existing" == "$candidate" ]] && return
+    done
+    rebuild_components+=("$candidate")
+}
+
 usage() {
     cat <<'EOF'
 Usage: ./scripts/build.sh [options]
@@ -46,7 +55,7 @@ while (($#)); do
             ;;
         --rebuild)
             (($# >= 2)) || { echo "--rebuild requires a value" >&2; exit 2; }
-            rebuild_components+=("$2"); shift
+            append_rebuild_component "$2"; shift
             ;;
         --clean) CLEAN=1 ;;
         --configure-only) CONFIGURE_ONLY=1 ;;
@@ -93,10 +102,16 @@ if [[ -n "$OUTPUT_DIR" ]]; then
     make_args+=("O=$OUTPUT_DIR")
     images_dir="$OUTPUT_DIR/images"
     lock_file="${OUTPUT_DIR}.proaudio-build.lock"
+    state_file="$OUTPUT_DIR/.proaudio-source-revisions"
+    config_file="$OUTPUT_DIR/.config"
 else
     images_dir="$BUILDROOT_DIR/output/images"
     lock_file="$BUILDROOT_DIR/.proaudio-build.lock"
+    state_file="$BUILDROOT_DIR/output/.proaudio-source-revisions"
+    config_file="$BUILDROOT_DIR/.config"
 fi
+had_existing_config=0
+[[ -f "$config_file" ]] && had_existing_config=1
 
 command -v flock >/dev/null 2>&1 || {
     echo "flock is required to prevent concurrent Buildroot writes." >&2
@@ -104,6 +119,38 @@ command -v flock >/dev/null 2>&1 || {
 }
 exec 9>"$lock_file"
 flock -n 9 || { echo "Another ProAudio firmware build is already using this output." >&2; exit 1; }
+
+native_revision=""
+webui_revision=""
+network_revision=""
+if git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    native_source_revision="$(git -C "$ROOT_DIR/sources/proaudio-player-native" rev-parse HEAD 2>/dev/null || true)"
+    native_package_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-player-native 2>/dev/null || true)"
+    shared_package_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-player 2>/dev/null || true)"
+    webui_source_revision="$(git -C "$ROOT_DIR/sources/proaudio-player-webui" rev-parse HEAD 2>/dev/null || true)"
+    webui_package_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-webui 2>/dev/null || true)"
+    network_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-networkd 2>/dev/null || true)"
+    native_revision="${native_source_revision}:${native_package_revision}:${shared_package_revision}"
+    webui_revision="${webui_source_revision}:${webui_package_revision}"
+fi
+
+if ((!CLEAN && had_existing_config)); then
+    previous_native="$(sed -n 's/^native=//p' "$state_file" 2>/dev/null || true)"
+    previous_webui="$(sed -n 's/^webui=//p' "$state_file" 2>/dev/null || true)"
+    previous_network="$(sed -n 's/^network=//p' "$state_file" 2>/dev/null || true)"
+
+    # An existing output without our state file predates this wrapper. Rebuild
+    # the two local-source packages once to establish a trustworthy baseline.
+    if [[ -n "$native_revision" && ( -z "$previous_native" || "$previous_native" != "$native_revision" ) ]]; then
+        append_rebuild_component native
+    fi
+    if [[ -n "$webui_revision" && ( -z "$previous_webui" || "$previous_webui" != "$webui_revision" ) ]]; then
+        append_rebuild_component webui
+    fi
+    if [[ -n "$network_revision" && ( -z "$previous_network" || "$previous_network" != "$network_revision" ) ]]; then
+        append_rebuild_component network
+    fi
+fi
 
 if ((CLEAN)); then
     printf '%s\n' "Cleaning Buildroot output by explicit request..."
@@ -131,4 +178,16 @@ done
 
 printf 'Building with %s job(s)...\n' "$JOBS"
 make -j"$JOBS" "${make_args[@]}"
+
+mkdir -p "$(dirname "$state_file")"
+state_tmp="$(mktemp "${state_file}.XXXXXX")"
+trap 'unlink "$state_tmp" 2>/dev/null || true' EXIT
+{
+    printf 'native=%s\n' "$native_revision"
+    printf 'webui=%s\n' "$webui_revision"
+    printf 'network=%s\n' "$network_revision"
+} >"$state_tmp"
+mv -f "$state_tmp" "$state_file"
+trap - EXIT
+
 printf 'Firmware images: %s\n' "$images_dir"

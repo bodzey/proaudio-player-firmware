@@ -178,7 +178,11 @@ Build the Raspberry Pi 4 image:
 
 This synchronizes pinned submodules, validates the host, loads the canonical
 defconfig and reuses compatible Buildroot output. It never follows a
-submodule branch with `--remote` and never cleans implicitly.
+submodule branch with `--remote` and never cleans implicitly. The wrapper
+records the successfully built native/Web UI/network revisions and automatically
+invalidates only a local-source package whose pinned revision changed. An
+existing output created before this mechanism gets one conservative refresh
+of those local packages to establish the baseline.
 
 After changing one of the local project components, invalidate only that
 Buildroot package before continuing the normal image build:

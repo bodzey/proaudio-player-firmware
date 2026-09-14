@@ -46,6 +46,14 @@ def test_incremental_build_requires_explicit_cleanup_and_pinned_submodules():
     assert "proaudio-webui-dirclean" in script
     assert "proaudio-networkd-dirclean" in script
     assert "flock -n 9" in script
+    assert ".proaudio-source-revisions" in script
+    assert "previous_native" in script
+    assert "previous_webui" in script
+    assert "previous_network" in script
+    assert "HEAD:br2-external/package/proaudio-player-native" in script
+    assert "HEAD:br2-external/package/proaudio-webui" in script
+    assert "HEAD:br2-external/package/proaudio-networkd" in script
+    assert 'mv -f "$state_tmp" "$state_file"' in script
 
 
 def test_host_check_defers_authoritative_requirements_to_buildroot():
