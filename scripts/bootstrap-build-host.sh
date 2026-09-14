@@ -124,7 +124,7 @@ else
 fi
 
 if ((UPDATE_SUBMODULES)); then
-    if [[ ! -d "$ROOT_DIR/.git" ]]; then
+    if ! git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         printf '%s\n' "This is not a Git checkout; cannot initialize submodules." >&2
         exit 1
     fi

@@ -39,6 +39,7 @@ def test_incremental_build_requires_explicit_cleanup_and_pinned_submodules():
     assert "rm -rf" not in script
     assert "submodule update --init --recursive" in script
     assert "submodule update --remote" not in script
+    assert "rev-parse --is-inside-work-tree" in script
     assert "if ((CLEAN)); then" in script
     assert 'make "${make_args[@]}" clean' in script
     assert "proaudio-player-native-dirclean" in script
@@ -70,5 +71,6 @@ def test_container_builder_preserves_unprivileged_output_ownership():
     dockerfile = (ROOT / "containers/Dockerfile.build").read_text(encoding="utf-8")
     assert '--user "$(id -u):$(id -g)"' in wrapper
     assert "EUID == 0" in wrapper
+    assert "rev-parse --is-inside-work-tree" in wrapper
     assert "util-linux" in dockerfile
     assert 'ENTRYPOINT ["./scripts/build.sh", "--no-submodules"]' in dockerfile

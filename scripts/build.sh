@@ -75,7 +75,10 @@ if ((CONFIGURE_ONLY && ${#rebuild_components[@]})); then
 fi
 
 if ((UPDATE_SUBMODULES)); then
-    [[ -d "$ROOT_DIR/.git" ]] || { echo "The repository is not a Git checkout." >&2; exit 1; }
+    git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+        echo "The repository is not a Git checkout." >&2
+        exit 1
+    }
     git -C "$ROOT_DIR" submodule sync --recursive
     # Deliberately omit --remote: the firmware commit's gitlinks are authoritative.
     git -C "$ROOT_DIR" submodule update --init --recursive
