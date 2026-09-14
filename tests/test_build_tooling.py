@@ -45,6 +45,8 @@ def test_incremental_build_requires_explicit_cleanup_and_pinned_submodules():
     assert "proaudio-webui-dirclean" in script
     assert "proaudio-networkd-dirclean" in script
     assert "flock -n 9" in script
+    assert "rev-parse --absolute-git-dir" in script
+    assert '$BUILDROOT_DIR/.proaudio-build.lock' not in script
     assert ".proaudio-source-revisions" in script
     assert "previous_native" in script
     assert "previous_webui" in script
@@ -85,6 +87,8 @@ def test_source_sync_follows_dev_but_keeps_buildroot_pinned():
     assert "refs/remotes/origin/dev" in script
     assert "status --porcelain" in script
     assert "Buildroot submodule has local changes" in script
+    assert "legacy_lock" in script
+    assert 'unlink "$legacy_lock"' in script
 
 
 def test_container_builder_preserves_unprivileged_output_ownership():

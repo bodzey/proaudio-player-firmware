@@ -95,17 +95,24 @@ if [[ -n "$OUTPUT_DIR" ]]; then
     OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd -P)"
     make_args+=("O=$OUTPUT_DIR")
     images_dir="$OUTPUT_DIR/images"
-    lock_file="${OUTPUT_DIR}.proaudio-build.lock"
+    fallback_lock_file="${OUTPUT_DIR}.proaudio-build.lock"
     state_file="$OUTPUT_DIR/.proaudio-source-revisions"
     config_file="$OUTPUT_DIR/.config"
 else
     images_dir="$BUILDROOT_DIR/output/images"
-    lock_file="$BUILDROOT_DIR/.proaudio-build.lock"
+    fallback_lock_file="$ROOT_DIR/.proaudio-build.lock"
     state_file="$BUILDROOT_DIR/output/.proaudio-source-revisions"
     config_file="$BUILDROOT_DIR/.config"
 fi
 had_existing_config=0
 [[ -f "$config_file" ]] && had_existing_config=1
+
+if git_dir="$(git -C "$ROOT_DIR" rev-parse --absolute-git-dir 2>/dev/null)"; then
+    lock_file="$git_dir/proaudio-build.lock"
+else
+    lock_file="$fallback_lock_file"
+fi
+mkdir -p "$(dirname "$lock_file")"
 
 command -v flock >/dev/null 2>&1 || {
     echo "flock is required to prevent concurrent Buildroot writes." >&2

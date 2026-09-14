@@ -16,6 +16,16 @@ git -C "$ROOT_DIR" submodule sync --recursive
 
 # Buildroot is part of the firmware toolchain contract. Keep its exact gitlink
 # revision instead of following the remote default branch.
+legacy_lock="$ROOT_DIR/upstream/buildroot/.proaudio-build.lock"
+if [[ -f "$legacy_lock" && ! -s "$legacy_lock" ]] && \
+   ! git -C "$ROOT_DIR/upstream/buildroot" ls-files --error-unmatch \
+       .proaudio-build.lock >/dev/null 2>&1; then
+    if ! flock -n "$legacy_lock" true; then
+        echo "Another build still owns the legacy Buildroot lock." >&2
+        exit 1
+    fi
+    unlink "$legacy_lock"
+fi
 if git -C "$ROOT_DIR/upstream/buildroot" rev-parse --is-inside-work-tree >/dev/null 2>&1 && \
    [[ -n "$(git -C "$ROOT_DIR/upstream/buildroot" status --porcelain)" ]]; then
     echo "Buildroot submodule has local changes; refusing to overwrite them." >&2
