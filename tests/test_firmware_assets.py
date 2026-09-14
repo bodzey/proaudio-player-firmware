@@ -95,6 +95,17 @@ def test_avahi_is_the_only_mdns_responder():
     assert "resolved.conf.d/10-proaudio.conf" in makefile
 
 
+def test_wifi_regdomain_is_early_and_provisioning_avoids_duplicate_scan():
+    cmdline = (
+        ROOT / "br2-external/board/raspberrypi4-64/cmdline.txt"
+    ).read_text(encoding="utf-8")
+    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
+
+    assert "cfg80211.ieee80211_regdom=UA" in cmdline
+    assert '"device", "wifi", "rescan"' not in daemon
+    assert '"--rescan", "auto"' in daemon
+
+
 def test_mpd_first_boot_runtime_files_exist_before_service_start():
     storage = (
         ROOT
@@ -206,6 +217,8 @@ def test_player_services_require_initialized_data_storage():
         "proaudio-player-shairport.service",
         "proaudio-player-dlna.service",
         "proaudio-player-webui.service",
+        "proaudio-player-audio-output.path",
+        "proaudio-player-output-apply.path",
     ):
         dropin = (systemd / f"{unit}.d/storage.conf").read_text(encoding="utf-8")
         assert "Requires=proaudio-storage-layout.target" in dropin
