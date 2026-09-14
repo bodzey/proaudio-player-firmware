@@ -16,20 +16,23 @@ PROAUDIO_PLAYER_NATIVE_DEPENDENCIES = \
 	pulseaudio \
 	host-pkgconf
 
-# cargo-package normally vendors dependencies during the download step. A local
-# site deliberately skips that step, so prime Buildroot's shared Cargo cache
-# before the standard offline/locked cargo build. host-rustc is provided by the
-# cargo-package infrastructure before PRE_BUILD hooks run.
-define PROAUDIO_PLAYER_NATIVE_FETCH_CARGO_DEPENDENCIES
+# cargo-package normally vendors dependencies during the download post-process.
+# A local site skips that stage, so reproduce Buildroot's cargo post-process in
+# the build directory before the standard offline/locked cargo build. Keeping
+# the generated .cargo/config.toml next to Cargo.toml makes Cargo use VENDOR as
+# its source replacement exactly like a normal Buildroot cargo package.
+define PROAUDIO_PLAYER_NATIVE_VENDOR_CARGO_DEPENDENCIES
 	cd $(@D) && \
-		$(TARGET_MAKE_ENV) \
-		$(PKG_CARGO_ENV) \
-		$(PROAUDIO_PLAYER_NATIVE_CARGO_ENV) \
-		$(HOST_DIR)/bin/cargo fetch \
-			--locked \
-			--target $(RUSTC_TARGET_NAME)
+		mkdir -p .cargo $(BR_CARGO_HOME) && \
+		MAKEFLAGS= \
+		CARGO_HOME=$(BR_CARGO_HOME) \
+		flock $(BR_CARGO_HOME)/.br-lock \
+			$(HOST_DIR)/bin/cargo vendor \
+			--manifest-path Cargo.toml \
+			--locked VENDOR \
+			> .cargo/config.toml
 endef
-PROAUDIO_PLAYER_NATIVE_PRE_BUILD_HOOKS += PROAUDIO_PLAYER_NATIVE_FETCH_CARGO_DEPENDENCIES
+PROAUDIO_PLAYER_NATIVE_PRE_BUILD_HOOKS += PROAUDIO_PLAYER_NATIVE_VENDOR_CARGO_DEPENDENCIES
 
 define PROAUDIO_PLAYER_NATIVE_USERS
 	proaudio-player -1 proaudio-player -1 * /var/lib/proaudio-player /bin/false audio,dialout,pipewire ProAudio Player
