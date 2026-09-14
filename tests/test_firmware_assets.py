@@ -198,3 +198,31 @@ def test_player_services_require_initialized_data_storage():
     overlay = ROOT / "br2-external/board/raspberrypi4-64/rootfs-overlay"
     assert not (overlay / "usr/libexec/proaudio-player/grow-rootfs").exists()
     assert not (overlay / "usr/lib/systemd/system/proaudio-grow-rootfs.service").exists()
+
+
+def test_alert_media_and_runtime_controls_use_persistent_storage():
+    native = ROOT / "sources/proaudio-player-native"
+    webui = ROOT / "sources/proaudio-player-webui"
+    config = (native / "config/config.yaml.example").read_text(encoding="utf-8")
+    backend = (native / "src/api/backend.rs").read_text(encoding="utf-8")
+    alerts = (native / "src/alerts.rs").read_text(encoding="utf-8")
+    types = (webui / "src/api/types.ts").read_text(encoding="utf-8")
+    panel = (webui / "src/features/alerts/AlertsPanel.tsx").read_text(encoding="utf-8")
+    storage = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
+        "proaudio-player/prepare-storage"
+    ).read_text(encoding="utf-8")
+
+    for name in ("alarm_start.mp3", "alarm_end.mp3", "minute_silence.mp3"):
+        assert f'/var/lib/proaudio-player-alert/media/{name}' in config
+        assert name in storage
+
+    assert '"/settings/alerts/media"' in backend
+    assert '"/settings/alerts/media/{kind}"' in backend
+    assert "atomic_file::write" in backend
+    assert "notifications_enabled" in alerts
+    assert "pub type AlertMediaKind" in types
+    assert "minute_silence_enabled: boolean" in types
+    assert "Файли сповіщень" in panel
+    assert "Увімкнути систему сповіщень" in panel
