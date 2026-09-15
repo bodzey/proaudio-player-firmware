@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000002 Mon Sep 17 00:00:00 2001
+From: Bohdan Cherniak <70845142+bodzey@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 16:30:00 +0300
+Subject: [PATCH] network: derive stable hostname from device identity
+
+---
+ proaudio-networkd | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/proaudio-networkd b/proaudio-networkd
+index 714f3b4..1111111 100755
+--- a/proaudio-networkd
++++ b/proaudio-networkd
+@@ -330,6 +330,22 @@ class NetworkDaemon:
+         cleaned = "".join(ch for ch in serial.upper() if ch.isalnum())
+         return (cleaned[-4:] or "0000").rjust(4, "0")
+ 
++    def configure_hostname(self):
++        wanted = f"proaudio-player-{self.device_serial_suffix().lower()}"
++        current = command(["/bin/hostname"], timeout=5)
++        if current.returncode == 0 and current.stdout.strip() == wanted:
++            return
++        result = command(["/bin/hostname", wanted], timeout=5)
++        if result.returncode != 0:
++            LOG.warning("Не вдалося встановити hostname %s: %s", wanted, result.stderr.strip())
++            return
++        try:
++            with open("/etc/hostname", "w", encoding="ascii") as handle:
++                handle.write(wanted + "\n")
++        except OSError as exc:
++            LOG.warning("Не вдалося зберегти hostname %s: %s", wanted, exc)
++        LOG.info("Hostname пристрою: %s", wanted)
++
+     def setup_ssid(self):
+         prefix = self.cfg["SETUP_SSID_PREFIX"].strip() or "ProAudio"
+         return f"{prefix}-{self.device_serial_suffix()}"
+@@ -634,6 +650,8 @@ class NetworkDaemon:
+         if not self.wait_for_networkmanager():
+             raise RuntimeError("NetworkManager не готовий")
++        # Set a stable unique mDNS/system hostname before external connectivity.
++        self.configure_hostname()
+         self.nmcli("radio", "wifi", "on", timeout=10)
+         self.configure_regdomain()
+-- 
+2.51.0

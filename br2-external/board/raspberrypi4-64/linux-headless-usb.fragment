@@ -1,5 +1,6 @@
-# Development image: keep standard Raspberry Pi 4 display, input and USB support.
-# Do not disable device classes here; the bcm2711 defconfig remains the baseline.
+# ProAudio Player development kernel policy for Raspberry Pi 4.
+# DEV keeps remote/serial diagnostics, but the product is audio-only: no video,
+# framebuffer, camera/media, local HID UI or Bluetooth stack is built.
 
 # GPIO character-device API for the physical setup button.
 CONFIG_GPIOLIB=y
@@ -22,20 +23,28 @@ CONFIG_MMC_BCM2835=y
 # Bluetooth is not used by ProAudio Player.
 # CONFIG_BT is not set
 
-# HDMI / local console / input for development and diagnostics.
-CONFIG_VT=y
-CONFIG_INPUT=y
-CONFIG_HID_SUPPORT=y
-CONFIG_HID=y
-CONFIG_HIDRAW=y
-CONFIG_USB_HID=y
+# HDMI audio needs the VC4/KMS HDMI pipeline, but no rendering/display stack.
 CONFIG_DRM=y
 CONFIG_DRM_VC4=y
-CONFIG_DRM_V3D=y
-CONFIG_FB=y
-CONFIG_FRAMEBUFFER_CONSOLE=y
+# CONFIG_DRM_V3D is not set
+# CONFIG_DRM_FBDEV_EMULATION is not set
+# CONFIG_FB is not set
+# CONFIG_FRAMEBUFFER_CONSOLE is not set
+# CONFIG_VT is not set
 
-# Raspberry Pi 4 USB host controller and common USB classes.
+# No keyboard/mouse/HID UI and no camera/video/media devices.
+CONFIG_INPUT=y
+# CONFIG_INPUT_KEYBOARD is not set
+# CONFIG_INPUT_MOUSE is not set
+# CONFIG_INPUT_JOYSTICK is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_HID is not set
+# CONFIG_HIDRAW is not set
+# CONFIG_USB_HID is not set
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_USB_VIDEO_CLASS is not set
+
+# USB remains available for DACs and removable media.
 CONFIG_USB=y
 CONFIG_USB_XHCI_HCD=y
 CONFIG_SCSI=y
@@ -45,15 +54,13 @@ CONFIG_USB_UAS=y
 CONFIG_USB_ACM=m
 CONFIG_USB_SERIAL=m
 CONFIG_USB_NET_DRIVERS=y
-CONFIG_USB_PRINTER=m
-CONFIG_MEDIA_SUPPORT=y
-CONFIG_USB_VIDEO_CLASS=m
+# CONFIG_USB_PRINTER is not set
 
-# Audio outputs used during development.
+# Audio outputs: HDMI, USB DAC and future I2S/ASoC carrier-board DACs.
 CONFIG_SOUND=y
 CONFIG_SND=y
 CONFIG_SND_PCM=y
-CONFIG_SND_BCM2835=y
+# CONFIG_SND_BCM2835 is not set
 CONFIG_SND_USB_AUDIO=y
 CONFIG_SND_SOC=y
 CONFIG_SND_SOC_HDMI_CODEC=m

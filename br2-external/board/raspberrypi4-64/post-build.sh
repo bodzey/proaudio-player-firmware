@@ -34,6 +34,13 @@ rm -f "$TARGET_DIR/etc/systemd/system/local-fs.target.wants/data.mount"
 ln -sf /usr/lib/systemd/system/proaudio-storage.service \
 	"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/proaudio-storage.service"
 
+# The ProAudio graph normalizes hardware mixers itself at startup. Generic ALSA
+# state restore is both redundant and harmful on this appliance: it probes UCM
+# profiles we deliberately do not ship and can restore stale mixer state before
+# the deterministic audio graph is created.
+ln -sf /dev/null "$TARGET_DIR/etc/systemd/system/alsa-restore.service"
+ln -sf /dev/null "$TARGET_DIR/etc/systemd/system/alsa-state.service"
+
 # DEV firmware: make SSH available immediately after networking comes up.
 if [ -f "$TARGET_DIR/usr/lib/systemd/system/sshd.service" ]; then
 	ln -sf /usr/lib/systemd/system/sshd.service \

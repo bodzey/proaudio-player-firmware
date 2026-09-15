@@ -3,21 +3,24 @@ fixup_file=fixup4.dat
 kernel=Image
 arm_64bit=1
 
-# Development image: keep local HDMI output available.
+# Audio appliance: never probe or expose a local video path.
 disable_splash=1
 boot_delay=0
 disable_overscan=1
-display_auto_detect=1
-camera_auto_detect=1
-# The Pi 4 KMS overlay otherwise reserves 512 MiB CMA on this 1 GiB board.
-# 128 MiB is ample for the 1080p development console while leaving RAM to the
-# player stack. HDMI audio remains enabled by the VC4 overlay.
-dtoverlay=vc4-kms-v3d,cma-128
+display_auto_detect=0
+camera_auto_detect=0
+max_framebuffers=0
+enable_tvout=0
 
-# Keep analogue and HDMI audio support available for diagnostics.
-dtparam=audio=on
+# VC4 KMS is retained only for HDMI audio. Keep CMA deliberately small because
+# there is no framebuffer, camera, codec or 3D workload in ProAudio Player.
+dtoverlay=vc4-kms-v3d,cma-64
 
-# Bluetooth is not part of the product. Disable the onboard controller and
-# leave the primary PL011 UART available for the development serial console.
+# No legacy analogue PWM audio. HDMI codec, USB DAC and future I2S/ASoC DACs
+# are provided by the kernel audio stack instead.
+dtparam=audio=off
+
+# Bluetooth is not part of the product. Keep PL011 available for DEV serial SSH/
+# console diagnostics; production disables UART separately.
 dtoverlay=disable-bt
 enable_uart=1

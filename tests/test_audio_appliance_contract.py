@@ -1,0 +1,39 @@
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+BOARD = ROOT / "br2-external/board/raspberrypi4-64"
+NETWORK = ROOT / "br2-external/package/proaudio-networkd"
+
+
+def test_dev_kernel_is_audio_only_but_keeps_hdmi_audio():
+    fragment = (BOARD / "linux-headless-usb.fragment").read_text(encoding="utf-8")
+    config = (BOARD / "config.txt").read_text(encoding="utf-8")
+    cmdline = (BOARD / "cmdline.txt").read_text(encoding="utf-8")
+
+    assert "CONFIG_DRM_VC4=y" in fragment
+    assert "CONFIG_SND_SOC_HDMI_CODEC=m" in fragment
+    for disabled in (
+        "# CONFIG_DRM_V3D is not set",
+        "# CONFIG_FB is not set",
+        "# CONFIG_FRAMEBUFFER_CONSOLE is not set",
+        "# CONFIG_VT is not set",
+        "# CONFIG_MEDIA_SUPPORT is not set",
+        "# CONFIG_SND_BCM2835 is not set",
+    ):
+        assert disabled in fragment
+    assert "camera_auto_detect=0" in config
+    assert "display_auto_detect=0" in config
+    assert "max_framebuffers=0" in config
+    assert "dtparam=audio=off" in config
+    assert "console=tty1" not in cmdline
+    assert "console=ttyAMA0,115200" in cmdline
+
+
+def test_unique_hostname_patch_uses_same_device_identity_as_setup_ssid():
+    patch = (NETWORK / "0002-set-unique-runtime-hostname.patch").read_text(encoding="utf-8")
+    makefile = (NETWORK / "proaudio-networkd.mk").read_text(encoding="utf-8")
+    assert "self.device_serial_suffix()" in patch
+    assert "proaudio-player-" in patch
+    assert "self.configure_hostname()" in patch
+    assert "0002-set-unique-runtime-hostname.patch" in makefile

@@ -75,10 +75,12 @@ ensure_data_layout()
 		"$data_mount/player-alert/mpd" \
 		"$data_mount/player-alert/mpd/playlists"
 
+	# These are intentionally empty-capable configuration/state fragments.
+	# Runtime state.json is different: an empty JSON document is invalid, so the
+	# native daemon must create it only after it has real state to persist.
 	for file in \
 		provider-settings.yaml \
 		audio-settings.yaml \
-		state.json \
 		audio-output.env
 	do
 		if [ ! -e "$data_mount/player-alert/$file" ]; then
@@ -87,6 +89,15 @@ ensure_data_layout()
 		chown proaudio-player:proaudio-player "$data_mount/player-alert/$file"
 		chmod 0600 "$data_mount/player-alert/$file"
 	done
+
+	runtime_state=$data_mount/player-alert/state.json
+	if [ -e "$runtime_state" ] && [ ! -s "$runtime_state" ]; then
+		rm -f "$runtime_state"
+	fi
+	if [ -e "$runtime_state" ]; then
+		chown proaudio-player:proaudio-player "$runtime_state"
+		chmod 0600 "$runtime_state"
+	fi
 
 	# MPD creates and atomically replaces its binary database itself. An empty
 	# placeholder is not a valid database and makes every fresh image log

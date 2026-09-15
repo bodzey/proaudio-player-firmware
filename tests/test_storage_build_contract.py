@@ -31,6 +31,17 @@ def test_persistent_storage_boot_work_is_bounded_and_migration_safe():
     assert 'resize2fs "$data_partition"' in storage
 
 
+def test_empty_native_runtime_state_is_not_seeded():
+    storage = (
+        BOARD
+        / "rootfs-overlay/usr/libexec/proaudio-player/prepare-storage"
+    ).read_text(encoding="utf-8")
+    assert "state.json \\\" not in storage
+    assert "runtime_state=$data_mount/player-alert/state.json" in storage
+    assert '[ ! -s "$runtime_state" ]' in storage
+    assert 'rm -f "$runtime_state"' in storage
+
+
 def test_storage_dependent_path_units_do_not_join_early_paths_target():
     for name in (
         "proaudio-player-audio-output.path.d/storage.conf",
