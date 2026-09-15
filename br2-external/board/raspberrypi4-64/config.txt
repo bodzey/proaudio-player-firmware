@@ -17,6 +17,7 @@ dtoverlay=vc4-kms-v3d,cma-128
 # Keep analogue and HDMI audio support available for diagnostics.
 dtparam=audio=on
 
-# Keep UART available as an additional local recovery/debug console.
+# Bluetooth is not part of the product. Disable the onboard controller and
+# leave the primary PL011 UART available for the development serial console.
+dtoverlay=disable-bt
 enable_uart=1
-dtoverlay=miniuart-bt
