@@ -8,7 +8,7 @@ DATA_IMAGE_SIZE_MIB=64
 
 FILES=()
 for file in "${BINARIES_DIR}"/*.dtb "${BINARIES_DIR}"/rpi-firmware/*; do
-	FILES+=( "${file#${BINARIES_DIR}/}" )
+	FILES+=( "${file#"${BINARIES_DIR}"/}" )
 done
 
 KERNEL="$(sed -n 's/^kernel=//p' "${BINARIES_DIR}/rpi-firmware/config.txt")"
