@@ -8,7 +8,7 @@ if [ -z "$KEYS_FILE" ]; then
 	printf '%s\n' \
 		"ERROR: production firmware requires PROAUDIO_SSH_AUTHORIZED_KEYS_FILE." \
 		"Set it to a readable OpenSSH public-key file, for example:" \
-		'  PROAUDIO_SSH_AUTHORIZED_KEYS_FILE="$HOME/.ssh/id_ed25519.pub" ./scripts/build.sh --clean' >&2
+		"  PROAUDIO_SSH_AUTHORIZED_KEYS_FILE=\"\$HOME/.ssh/id_ed25519.pub\" ./scripts/build.sh --clean" >&2
 	exit 1
 fi
 
