@@ -4,12 +4,14 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "br2-external/package/proaudio-networkd"
+NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
 BOARD = ROOT / "br2-external/board/raspberrypi4-64"
 
 
 def test_ap_to_station_patch_applies_and_serializes_scans(tmp_path):
     source = PACKAGE / "proaudio-networkd"
     patch_file = PACKAGE / "0001-stabilize-ap-to-station-provisioning.patch"
+    makefile = (PACKAGE / "proaudio-networkd.mk").read_text(encoding="utf-8")
     work_source = tmp_path / "proaudio-networkd"
     work_source.write_bytes(source.read_bytes())
 
@@ -28,6 +30,13 @@ def test_ap_to_station_patch_applies_and_serializes_scans(tmp_path):
     assert '"ssid", ssid' in patched
     assert 'args += ["hidden", "yes"]' in patched
     assert "visible = self._prepare_station_connection(ssid)" in patched
+
+    assert "PROAUDIO_NETWORKD_APPLY_LOCAL_PATCHES" in makefile
+    assert "$(APPLY_PATCHES) $(@D) $(PROAUDIO_NETWORKD_PKGDIR)" in makefile
+    assert (
+        "PROAUDIO_NETWORKD_PRE_CONFIGURE_HOOKS += "
+        "PROAUDIO_NETWORKD_APPLY_LOCAL_PATCHES"
+    ) in makefile
 
     failure_tail = patched.split(
         'LOG.warning("Wi-Fi provisioning failed for %s: %s", ssid, error)', 1
@@ -54,5 +63,9 @@ def test_storage_does_not_seed_an_invalid_empty_mpd_database():
 
 def test_native_image_removes_unused_pulseaudio_system_policy_and_legacy_token():
     post_build = (BOARD / "post-build-native.sh").read_text(encoding="utf-8")
+    makefile = (NATIVE_PACKAGE / "proaudio-player-native.mk").read_text(
+        encoding="utf-8"
+    )
     assert "pulseaudio-system.conf" in post_build
     assert 'rm -f "$TARGET_DIR/etc/proaudio-player-alert/alerts-token"' in post_build
+    assert "/etc/proaudio-player-alert/alerts-token" not in makefile
