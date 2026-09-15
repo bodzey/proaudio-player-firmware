@@ -113,14 +113,12 @@ for command_name in findmnt sfdisk resize2fs; do
 	require_command "$command_name"
 done
 
-set -- $(findmnt -n -o SOURCE,FSTYPE "$data_mount")
-data_source=${1:-}
-data_fstype=${2:-}
+data_source=$(findmnt -n -o SOURCE "$data_mount")
+data_fstype=$(findmnt -n -o FSTYPE "$data_mount")
 [ "$data_fstype" = ext4 ] || fail "'$data_mount' must be an ext4 filesystem"
 
-set -- $(findmnt -n -o SOURCE,FSTYPE /)
-root_source=${1:-}
-root_fstype=${2:-}
+root_source=$(findmnt -n -o SOURCE /)
+root_fstype=$(findmnt -n -o FSTYPE /)
 [ "$root_fstype" = ext4 ] || fail "root filesystem must be ext4"
 
 resolve_partition "$data_source"
