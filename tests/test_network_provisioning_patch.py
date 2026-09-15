@@ -45,10 +45,14 @@ def test_ap_to_station_patch_applies_and_serializes_scans(tmp_path):
     assert "self.start_ap()" in failure_tail
 
 
-def test_dev_kms_does_not_reserve_half_of_rpi_ram():
+def test_dev_kms_is_minimal_hdmi_audio_pipeline():
     config = (BOARD / "config.txt").read_text(encoding="utf-8")
-    assert "dtoverlay=vc4-kms-v3d,cma-128" in config
+    assert "dtoverlay=vc4-kms-v3d,cma-64" in config
+    assert "cma-128" not in config
     assert "cma-512" not in config
+    assert "camera_auto_detect=0" in config
+    assert "display_auto_detect=0" in config
+    assert "max_framebuffers=0" in config
 
 
 def test_storage_does_not_seed_an_invalid_empty_mpd_database():
