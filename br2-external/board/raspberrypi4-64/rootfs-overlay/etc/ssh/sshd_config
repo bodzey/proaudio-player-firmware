@@ -1,11 +1,16 @@
-# DEV firmware only: deliberately permissive SSH for bench diagnostics.
 Port 22
 AddressFamily any
 ListenAddress 0.0.0.0
 ListenAddress ::
-PermitRootLogin yes
-PermitEmptyPasswords yes
-PasswordAuthentication yes
+
+# Production administration is SSH public-key only. Root has no password in
+# the image; authorized_keys is injected by post-build-production.sh.
+PermitRootLogin prohibit-password
+PubkeyAuthentication yes
+PasswordAuthentication no
+PermitEmptyPasswords no
 KbdInteractiveAuthentication no
+AuthenticationMethods publickey
+
 PrintMotd yes
 Subsystem sftp /usr/libexec/sftp-server
