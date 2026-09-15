@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BOARD = ROOT / "br2-external/board/raspberrypi4-64"
 PLAYER_PACKAGE = ROOT / "br2-external/package/proaudio-player"
+NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
 WEBUI_PACKAGE = ROOT / "br2-external/package/proaudio-webui"
 
 
@@ -39,6 +40,23 @@ def test_data_filesystem_uses_all_capacity():
 
     assert "\t-m 0 \\" in post_image
     assert "\t-m 1 \\" not in post_image
+
+
+def test_alert_token_is_not_baked_into_board_overlay():
+    overlay_token = (
+        BOARD / "rootfs-overlay/etc/proaudio-player-alert/alerts-token"
+    )
+    native_makefile = (
+        NATIVE_PACKAGE / "proaudio-player-native.mk"
+    ).read_text(encoding="utf-8")
+    legacy_makefile = (PLAYER_PACKAGE / "proaudio-player.mk").read_text(
+        encoding="utf-8"
+    )
+
+    assert not overlay_token.exists()
+    for makefile in (native_makefile, legacy_makefile):
+        assert "$(INSTALL) -D -m 0600 /dev/null" in makefile
+        assert "$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token" in makefile
 
 
 def test_webui_reuses_verified_npm_cache():
