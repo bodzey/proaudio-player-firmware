@@ -88,13 +88,20 @@ ensure_data_layout()
 		chmod 0600 "$data_mount/player-alert/$file"
 	done
 
-	for file in database state; do
-		if [ ! -e "$data_mount/player-alert/mpd/$file" ]; then
-			: > "$data_mount/player-alert/mpd/$file"
-		fi
-		chown proaudio-player:proaudio-player "$data_mount/player-alert/mpd/$file"
-		chmod 0640 "$data_mount/player-alert/mpd/$file"
-	done
+	# MPD creates and atomically replaces its binary database itself. An empty
+	# placeholder is not a valid database and makes every fresh image log
+	# "Database corrupted". Remove placeholders left by older firmware and only
+	# pre-create the text state file.
+	database_file=$data_mount/player-alert/mpd/database
+	if [ -e "$database_file" ] && [ ! -s "$database_file" ]; then
+		rm -f "$database_file"
+	fi
+	state_file=$data_mount/player-alert/mpd/state
+	if [ ! -e "$state_file" ]; then
+		: > "$state_file"
+	fi
+	chown proaudio-player:proaudio-player "$state_file"
+	chmod 0640 "$state_file"
 
 	factory_dir=/usr/share/proaudio-player/announcements
 	for file in alarm_start.mp3 alarm_end.mp3 minute_silence.mp3; do
@@ -139,7 +146,6 @@ disk=/dev/$disk_name
 resolve_partition "$root_source"
 [ "$RESOLVED_PARENT_NAME" = "$disk_name" ] || \
 	fail "SYSTEM and DATA are not on the same boot disk"
-
 data_partition_number=$(cat "$data_partition_sysfs/partition")
 data_partition_start=$(cat "$data_partition_sysfs/start")
 data_partition_sectors=$(cat "$data_partition_sysfs/size")
