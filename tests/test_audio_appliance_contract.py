@@ -79,6 +79,8 @@ def test_native_rootfs_drops_unused_systemd_and_pulseaudio_server():
         "# BR2_PACKAGE_SYSTEMD_VCONSOLE is not set",
         "# BR2_PACKAGE_SYSTEMD_PSTORE is not set",
         "# BR2_PACKAGE_SYSTEMD_HOSTNAMED is not set",
+        "# BR2_PACKAGE_ALSA_UTILS_ALSACTL is not set",
+        "# BR2_PACKAGE_ALSA_UTILS_ALSAMIXER is not set",
     ):
         assert disabled in defconfig
 
