@@ -43,21 +43,30 @@ resolve_partition()
 	RESOLVED_PARENT_NAME=$parent_name
 }
 
-initialize_data()
+ensure_data_layout()
 {
 	mkdir -p \
-		$data_mount/music \
-		$data_mount/player \
-		$data_mount/player-alert/media \
-		$data_mount/player-alert/mpd/playlists
+		"$data_mount/music" \
+		"$data_mount/player" \
+		"$data_mount/player-alert/media" \
+		"$data_mount/player-alert/mpd/playlists"
 
-	chown -R proaudio-player:proaudio-player \
-		$data_mount/music \
-		$data_mount/player \
-		$data_mount/player-alert
+	# Only normalize the directories owned by the appliance. Never recursively
+	# walk the music library at boot: a large library can contain many thousands
+	# of files and ownership of files created by the player is already correct.
+	chown proaudio-player:proaudio-player \
+		"$data_mount/music" \
+		"$data_mount/player" \
+		"$data_mount/player-alert" \
+		"$data_mount/player-alert/media" \
+		"$data_mount/player-alert/mpd" \
+		"$data_mount/player-alert/mpd/playlists"
 	chmod 0755 "$data_mount/music"
-	chmod 0750 "$data_mount/player" "$data_mount/player-alert" \
-		"$data_mount/player-alert/media" "$data_mount/player-alert/mpd" \
+	chmod 0750 \
+		"$data_mount/player" \
+		"$data_mount/player-alert" \
+		"$data_mount/player-alert/media" \
+		"$data_mount/player-alert/mpd" \
 		"$data_mount/player-alert/mpd/playlists"
 
 	for file in \
@@ -83,19 +92,22 @@ initialize_data()
 
 	factory_dir=/usr/share/proaudio-player/announcements
 	for file in alarm_start.mp3 alarm_end.mp3 minute_silence.mp3; do
-		if [ -f "$factory_dir/$file" ] && \
-		   [ ! -e "$data_mount/player-alert/media/$file" ]; then
-			cp "$factory_dir/$file" "$data_mount/player-alert/media/$file"
-			chown proaudio-player:proaudio-player "$data_mount/player-alert/media/$file"
-			chmod 0644 "$data_mount/player-alert/media/$file"
+		target=$data_mount/player-alert/media/$file
+		if [ -f "$factory_dir/$file" ] && [ ! -e "$target" ]; then
+			cp "$factory_dir/$file" "$target"
+		fi
+		if [ -e "$target" ]; then
+			chown proaudio-player:proaudio-player "$target"
+			chmod 0644 "$target"
 		fi
 	done
+}
 
+mark_storage_ready()
+{
 	touch "$done_marker"
 	sync
 }
-
-[ -e "$done_marker" ] && exit 0
 
 for command_name in findmnt sfdisk resize2fs; do
 	require_command "$command_name"
@@ -127,6 +139,8 @@ data_partition_start=$(cat "$data_partition_sysfs/start")
 data_partition_sectors=$(cat "$data_partition_sysfs/size")
 disk_sectors=$(cat "/sys/class/block/$disk_name/size")
 data_partition_end=$((data_partition_start + data_partition_sectors))
+storage_ready=0
+[ -e "$done_marker" ] && storage_ready=1
 
 # Never rewrite a table when DATA is not the final partition. The player can
 # still run on the existing DATA capacity, which keeps custom hardware safe.
@@ -141,7 +155,11 @@ for candidate in /sys/class/block/*; do
 	if [ "$candidate_start" -gt "$data_partition_start" ]; then
 		log "DATA is not the final partition on '$disk'; preserving the partition table"
 		resize2fs "$data_partition"
-		initialize_data
+		rm -f "$pending_marker"
+		ensure_data_layout
+		if [ "$storage_ready" -eq 0 ]; then
+			mark_storage_ready
+		fi
 		exit 0
 	fi
 done
@@ -164,8 +182,17 @@ if [ "$unused_sectors" -gt "$minimum_free_sectors" ]; then
 	done
 fi
 
-log "expanding the DATA filesystem on '$data_partition'"
-resize2fs "$data_partition"
-rm -f "$pending_marker"
-initialize_data
+# resize2fs is needed on first boot and after a partition-table expansion. On
+# normal boots the ready marker lets us skip the filesystem scan while still
+# re-applying the lightweight directory/file layout below for firmware updates.
+if [ "$storage_ready" -eq 0 ] || [ -e "$pending_marker" ]; then
+	log "expanding the DATA filesystem on '$data_partition'"
+	resize2fs "$data_partition"
+	rm -f "$pending_marker"
+fi
+
+ensure_data_layout
+if [ "$storage_ready" -eq 0 ]; then
+	mark_storage_ready
+fi
 log "persistent storage is ready"
