@@ -3,17 +3,21 @@ fixup_file=fixup4.dat
 kernel=Image
 arm_64bit=1
 
-# Development image: keep local HDMI output available.
 disable_splash=1
 boot_delay=0
-disable_overscan=1
-display_auto_detect=1
-camera_auto_detect=1
+
+# Production appliance: no local display stack, camera probing or firmware
+# framebuffers. VC4 KMS remains loaded only because HDMI audio depends on the
+# HDMI pipeline; no framebuffer/VT is built into the production kernel.
+camera_auto_detect=0
+display_auto_detect=0
+max_framebuffers=0
+enable_tvout=0
+
+# Disable legacy analogue PWM audio. HDMI audio stays enabled by the VC4 KMS
+# overlay, while USB/I2S audio remains available to the player.
+dtparam=audio=off
 dtoverlay=vc4-kms-v3d
 
-# Keep analogue and HDMI audio support available for diagnostics.
-dtparam=audio=on
-
-# Keep UART available as an additional local recovery/debug console.
-enable_uart=1
-dtoverlay=miniuart-bt
+# No UART recovery/debug console in production.
+enable_uart=0
