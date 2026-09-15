@@ -95,26 +95,35 @@ def test_avahi_is_the_only_mdns_responder():
     assert "resolved.conf.d/10-proaudio.conf" in makefile
 
 
-def test_wifi_regdomain_is_early_and_provisioning_avoids_duplicate_scan():
+def test_wifi_regdomain_is_early_and_initial_portal_avoids_duplicate_scan():
     cmdline = (
         ROOT / "br2-external/board/raspberrypi4-64/cmdline.txt"
     ).read_text(encoding="utf-8")
     daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
+    transition_patch = (
+        NETWORK_PACKAGE / "0001-stabilize-ap-to-station-provisioning.patch"
+    ).read_text(encoding="utf-8")
 
     assert "cfg80211.ieee80211_regdom=UA" in cmdline
     assert '"device", "wifi", "rescan"' not in daemon
     assert '"--rescan", "auto"' in daemon
+    assert '"device", "wifi", "rescan"' in transition_patch
+    assert '"ssid", ssid' in transition_patch
 
 
-def test_mpd_first_boot_runtime_files_exist_before_service_start():
+def test_mpd_first_boot_state_exists_but_database_is_not_seeded():
     storage = (
         ROOT
         / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
         "proaudio-player/prepare-storage"
     ).read_text(encoding="utf-8")
-    assert "for file in database state; do" in storage
-    assert ': > "$data_mount/player-alert/mpd/$file"' in storage
-    assert 'chmod 0640 "$data_mount/player-alert/mpd/$file"' in storage
+    assert "database_file=$data_mount/player-alert/mpd/database" in storage
+    assert '[ ! -s "$database_file" ]' in storage
+    assert 'rm -f "$database_file"' in storage
+    assert "for file in database state; do" not in storage
+    assert "state_file=$data_mount/player-alert/mpd/state" in storage
+    assert ': > "$state_file"' in storage
+    assert 'chmod 0640 "$state_file"' in storage
 
 
 def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
