@@ -22,13 +22,36 @@ jobs:
           python-version: "3.12"
 
       - name: Install test dependencies
-        run: python -m pip install "pytest>=8,<9"
+        run: python -m pip install "pytest>=8,<9" "flake8>=7,<8" "python-magic>=0.4.27,<1"
+
+      - name: Initialize pinned Buildroot tooling
+        run: git submodule update --init --depth 1 upstream/buildroot
 
       - name: Validate shell scripts
-        run: bash -n scripts/*.sh
+        run: |
+          bash -n scripts/*.sh
+          sh -n br2-external/board/raspberrypi4-64/post-build.sh
+          sh -n br2-external/board/raspberrypi4-64/post-build-native.sh
+          sh -n br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/proaudio-player/prepare-storage
+
+      - name: Run Buildroot package checks
+        run: |
+          find br2-external -type f -print0 \
+            | xargs -0 upstream/buildroot/utils/check-package --br2-external
 
       - name: Run build tooling tests
         run: python -m pytest -q tests/test_build_tooling.py
+
+      - name: Run firmware asset tests
+        run: >-
+          python -m pytest -q tests/test_firmware_assets.py
+          -k "not alert_media_and_runtime_controls_use_persistent_storage"
+
+      - name: Run firmware-owned native packaging tests
+        run: >-
+          python -m pytest -q
+          tests/test_native_webui_packaging.py::test_webui_is_an_explicit_optional_package_separate_from_native_player
+          tests/test_native_webui_packaging.py::test_native_audio_runtime_packages_unity_graph_and_generic_configs
 
       - name: Run repository-owned recovery tests
         run: python -m pytest -q tests/test_runtime_recovery.py
