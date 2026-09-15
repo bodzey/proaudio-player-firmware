@@ -23,13 +23,16 @@ will perform its own directed scan.
 Upstream: not applicable (ProAudio Player local package)
 Signed-off-by: Bohdan Cherniak <70845142+bodzey@users.noreply.github.com>
 ---
- proaudio-networkd | 58 ++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 54 insertions(+), 4 deletions(-)
+ proaudio-networkd | 59 +++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 54 insertions(+), 5 deletions(-)
 
 diff --git a/proaudio-networkd b/proaudio-networkd
 --- a/proaudio-networkd
 +++ b/proaudio-networkd
-@@ -1,18 +1,68 @@
+@@ -13,21 +13,69 @@
+         ).start()
+         return True
+ 
 +    def _wifi_cache_contains(self, ssid):
 +        result = self.nmcli(
 +            "-t", "-e", "yes", "-f", "SSID",
@@ -45,17 +48,16 @@ diff --git a/proaudio-networkd b/proaudio-networkd
 +        )
 +
 +    def _prepare_station_connection(self, ssid):
-+        # A Broadcom SDIO interface needs a short settling window after leaving
-+        # AP mode. Fully remove the setup profile first so NetworkManager cannot
-+        # auto-reactivate it while the supplicant is switching back to STA mode.
++        # Broadcom SDIO needs a short settling window after leaving AP mode.
++        # Delete the setup profile first so NetworkManager cannot reactivate it
++        # while wpa_supplicant is switching the interface back to STA mode.
 +        self.stop_ap()
 +        self.nmcli("radio", "wifi", "on", timeout=10)
 +        self.configure_regdomain()
 +        time.sleep(0.75)
 +
-+        # Refresh only the requested SSID instead of starting a broad scan while
-+        # the previous AP->STA transition is still pending. NetworkManager's
-+        # directed scan also makes first-time hidden/mobile hotspots discoverable.
++        # Refresh only the requested SSID instead of stacking another broad scan
++        # on top of the AP->STA transition.
 +        for attempt in range(3):
 +            result = self.nmcli(
 +                "device", "wifi", "rescan", "ifname", self.iface,
@@ -94,22 +96,20 @@ diff --git a/proaudio-networkd b/proaudio-networkd
                  args += ["password", password]
 -            result = self.nmcli(*args, timeout=35)
 +            if not visible:
-+                # A phone hotspot may suppress beaconing until a directed probe
-+                # arrives. NetworkManager documents hidden=yes for exactly this
-+                # first-connection case.
++                # A hidden/mobile hotspot can require a directed probe before
++                # its first connection. NetworkManager exposes this as hidden.
 +                args += ["hidden", "yes"]
 +            result = self.nmcli(*args, timeout=40)
              if result.returncode == 0:
                  self.nmcli(
                      "connection", "modify", WIFI_PROFILE,
-@@ -28,7 +78,9 @@
+@@ -43,7 +91,8 @@
              LOG.warning("Wi-Fi provisioning failed for %s: %s", ssid, error)
              self._delete_connection(WIFI_PROFILE)
              self.set_error(f"Не вдалося підключитися до «{ssid}». Перевірте пароль і спробуйте ще раз.")
 -            self.scan()
-+            # Do not start another scan here. A failed `wifi connect` can leave
-+            # a scan request pending; overlapping it with scan() is what caused
-+            # repeated `Reject scan trigger` and brcmfmac channel-error storms.
++            # Do not immediately trigger another broad scan here. A failed
++            # connect may leave a scan pending; start_ap() can recover directly.
              self.start_ap()
          except Exception as exc:
              LOG.exception("Помилка підключення до Wi-Fi")
