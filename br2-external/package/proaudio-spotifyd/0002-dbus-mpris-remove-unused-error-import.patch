@@ -5,6 +5,9 @@ Subject: [PATCH] spotifyd: remove unused MPRIS error log import
 spotifyd 0.4.2 imports the `error` logging macro in dbus_mpris.rs but does not
 use it with the ProAudio build feature set. Remove the unused import so the
 cross-build is warning-free.
+
+Upstream: not submitted
+Signed-off-by: Bohdan Cherniak <70845142+bodzey@users.noreply.github.com>
 ---
  src/dbus_mpris.rs | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
