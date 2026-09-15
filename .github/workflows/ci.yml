@@ -53,9 +53,11 @@ jobs:
           tests/test_build_tooling.py
           tests/test_storage_build_contract.py
 
-      - name: Run firmware asset tests
+      - name: Run firmware asset and network transition tests
         run: >-
-          python -m pytest -q tests/test_firmware_assets.py
+          python -m pytest -q
+          tests/test_firmware_assets.py
+          tests/test_network_provisioning_patch.py
           -k "not alert_media_and_runtime_controls_use_persistent_storage"
 
       - name: Run firmware-owned native packaging tests
