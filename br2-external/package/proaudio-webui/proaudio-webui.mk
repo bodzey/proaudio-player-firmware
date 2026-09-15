@@ -25,6 +25,7 @@ define PROAUDIO_WEBUI_BUILD_CMDS
 		npm_config_cache="$(DL_DIR)/br-npm-cache" \
 		npm_config_audit=false \
 		npm_config_fund=false \
+		npm_config_prefer_offline=true \
 		npm_config_update_notifier=false \
 		$(HOST_DIR)/bin/npm ci --include=dev
 	cd $(@D) && \
