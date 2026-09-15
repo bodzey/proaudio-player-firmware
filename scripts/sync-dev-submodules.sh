@@ -35,8 +35,8 @@ git -C "$ROOT_DIR" submodule update --init --recursive upstream/buildroot
 
 for path in "${SOURCE_PATHS[@]}"; do
     branch="$(git -C "$ROOT_DIR" config -f .gitmodules --get "submodule.${path}.branch" || true)"
-    if [[ "$branch" != dev ]]; then
-        printf 'Submodule %s must track dev, found: %s\n' "$path" "${branch:-unset}" >&2
+    if [[ "$branch" != main ]]; then
+        printf 'Submodule %s must track main, found: %s\n' "$path" "${branch:-unset}" >&2
         exit 1
     fi
 
@@ -51,11 +51,11 @@ for path in "${SOURCE_PATHS[@]}"; do
     git -C "$ROOT_DIR" submodule update --init --remote --checkout "$path"
 
     head_revision="$(git -C "$ROOT_DIR/$path" rev-parse HEAD)"
-    dev_revision="$(git -C "$ROOT_DIR/$path" rev-parse refs/remotes/origin/dev)"
-    if [[ "$head_revision" != "$dev_revision" ]]; then
-        printf 'Submodule %s did not reach origin/dev (%s != %s).\n' \
-            "$path" "$head_revision" "$dev_revision" >&2
+    main_revision="$(git -C "$ROOT_DIR/$path" rev-parse refs/remotes/origin/main)"
+    if [[ "$head_revision" != "$main_revision" ]]; then
+        printf 'Submodule %s did not reach origin/main (%s != %s).\n' \
+            "$path" "$head_revision" "$main_revision" >&2
         exit 1
     fi
-    printf 'Source %s: origin/dev at %s\n' "$path" "${head_revision:0:12}"
+    printf 'Source %s: origin/main at %s\n' "$path" "${head_revision:0:12}"
 done
