@@ -1,0 +1,115 @@
+From: ProAudio Player <noreply@proaudio-player.local>
+Date: Tue, 15 Sep 2026 14:20:00 +0300
+Subject: [PATCH] networkd: stabilize AP to station provisioning
+
+The setup portal currently tears down dnsmasq and deactivates the setup
+connection, then immediately asks NetworkManager to connect to the requested
+SSID. On brcmfmac this races the AP-to-station transition: NetworkManager can
+miss an otherwise valid SSID, while the failure path starts another scan on
+top of a scan already pending in wpa_supplicant. The result is repeated
+"No network with SSID" failures, rejected scan triggers and large bursts of
+brcmfmac channel errors.
+
+Fully stop and remove the setup AP before entering station mode, allow the
+interface to settle, and request a directed scan for the selected SSID. Retry
+the directed scan a few times without stacking broad scans. If the SSID still
+does not appear in NetworkManager's cache, use its documented hidden=yes
+first-connect path so mobile/hidden hotspots can respond to a directed probe.
+
+Do not run the broad portal scan in the connection failure path. The existing
+cached list is sufficient to render the portal, and a later connection attempt
+will perform its own directed scan.
+
+Upstream: not applicable (ProAudio Player local package)
+Signed-off-by: Bohdan Cherniak <70845142+bodzey@users.noreply.github.com>
+---
+ proaudio-networkd | 59 +++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 54 insertions(+), 5 deletions(-)
+
+diff --git a/proaudio-networkd b/proaudio-networkd
+--- a/proaudio-networkd
++++ b/proaudio-networkd
+@@ -13,21 +13,69 @@
+         ).start()
+         return True
+ 
++    def _wifi_cache_contains(self, ssid):
++        result = self.nmcli(
++            "-t", "-e", "yes", "-f", "SSID",
++            "device", "wifi", "list", "ifname", self.iface,
++            "--rescan", "no", timeout=10,
++        )
++        if result.returncode != 0:
++            return False
++        return any(
++            split_escaped(line)[0] == ssid
++            for line in result.stdout.splitlines()
++            if line
++        )
++
++    def _prepare_station_connection(self, ssid):
++        # Broadcom SDIO needs a short settling window after leaving AP mode.
++        # Delete the setup profile first so NetworkManager cannot reactivate it
++        # while wpa_supplicant is switching the interface back to STA mode.
++        self.stop_ap()
++        self.nmcli("radio", "wifi", "on", timeout=10)
++        self.configure_regdomain()
++        time.sleep(0.75)
++
++        # Refresh only the requested SSID instead of stacking another broad scan
++        # on top of the AP->STA transition.
++        for attempt in range(3):
++            result = self.nmcli(
++                "device", "wifi", "rescan", "ifname", self.iface,
++                "ssid", ssid, timeout=12,
++            )
++            if result.returncode == 0:
++                deadline = time.monotonic() + 4
++                while time.monotonic() < deadline:
++                    if self._wifi_cache_contains(ssid):
++                        return True
++                    time.sleep(0.4)
++            else:
++                message = result.stderr.strip() or result.stdout.strip()
++                LOG.info(
++                    "Directed Wi-Fi scan for %s attempt %d/3 deferred: %s",
++                    ssid, attempt + 1, message or "scan busy",
++                )
++            time.sleep(0.75 * (attempt + 1))
++        return self._wifi_cache_contains(ssid)
++
+     def _connect_worker(self, ssid, password):
+         time.sleep(1)
+         try:
+-            self.stop_dnsmasq()
+-            self.nmcli("connection", "down", SETUP_PROFILE, timeout=10)
++            visible = self._prepare_station_connection(ssid)
+             self._delete_connection(WIFI_PROFILE)
+             args = [
+-                "--wait", "25",
++                "--wait", "30",
+                 "device", "wifi", "connect", ssid,
+                 "ifname", self.iface,
+                 "name", WIFI_PROFILE,
+             ]
+             if password:
+                 args += ["password", password]
+-            result = self.nmcli(*args, timeout=35)
++            if not visible:
++                # A hidden/mobile hotspot can require a directed probe before
++                # its first connection. NetworkManager exposes this as hidden.
++                args += ["hidden", "yes"]
++            result = self.nmcli(*args, timeout=40)
+             if result.returncode == 0:
+                 self.nmcli(
+                     "connection", "modify", WIFI_PROFILE,
+@@ -43,7 +91,8 @@
+             LOG.warning("Wi-Fi provisioning failed for %s: %s", ssid, error)
+             self._delete_connection(WIFI_PROFILE)
+             self.set_error(f"Не вдалося підключитися до «{ssid}». Перевірте пароль і спробуйте ще раз.")
+-            self.scan()
++            # Do not immediately trigger another broad scan here. A failed
++            # connect may leave a scan pending; start_ap() can recover directly.
+             self.start_ap()
+         except Exception as exc:
+             LOG.exception("Помилка підключення до Wi-Fi")
