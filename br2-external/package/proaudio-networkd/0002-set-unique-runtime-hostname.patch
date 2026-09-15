@@ -3,6 +3,13 @@ From: Bohdan Cherniak <70845142+bodzey@users.noreply.github.com>
 Date: Tue, 15 Sep 2026 16:30:00 +0300
 Subject: [PATCH] network: derive stable hostname from device identity
 
+Give each appliance a stable hostname derived from the same per-device suffix
+already used by the setup SSID. This prevents Avahi from resolving duplicate
+factory hostnames by dynamically renaming devices to proaudio-player-2, -3,
+etc. after they join a LAN.
+
+Upstream: not applicable (ProAudio Player local package)
+Signed-off-by: Bohdan Cherniak <70845142+bodzey@users.noreply.github.com>
 ---
  proaudio-networkd | 18 ++++++++++++++++++
  1 file changed, 18 insertions(+)
