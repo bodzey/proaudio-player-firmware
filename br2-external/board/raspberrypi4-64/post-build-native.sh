@@ -22,9 +22,17 @@ do
 	rm -f "$TARGET_DIR/usr/bin/$binary"
 done
 
-# PulseAudio is present only for libpulse client compatibility. pipewire-pulse
-# is the actual server, so PulseAudio's system-bus policy is unused and refers
-# to a `pulse` account that is intentionally not created without the PA daemon.
+# PipeWire-Pulse is the only PulseAudio-compatible server in native firmware.
+# spotifyd, native and the output watcher still require libpulse and pactl, so
+# retain the client ABI/tools but remove the redundant PulseAudio daemon and its
+# loadable server modules from the final appliance rootfs.
+rm -f "$TARGET_DIR/usr/bin/pulseaudio"
+for pulse_modules in "$TARGET_DIR"/usr/lib/pulse-*/modules; do
+	[ -e "$pulse_modules" ] || continue
+	rm -rf "$pulse_modules"
+done
+rm -f "$TARGET_DIR/usr/lib/systemd/system/pulseaudio.service"
+rm -f "$TARGET_DIR/etc/systemd/system/multi-user.target.wants/pulseaudio.service"
 rm -f "$TARGET_DIR/usr/share/dbus-1/system.d/pulseaudio-system.conf"
 
 # Alert credentials are mutable appliance state and live on the persistent DATA

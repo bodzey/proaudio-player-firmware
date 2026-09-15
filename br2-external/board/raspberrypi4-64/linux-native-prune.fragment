@@ -75,6 +75,29 @@ CONFIG_NLS=y
 # CONFIG_IPV6_SEG6_HMAC is not set
 # CONFIG_IPV6_IOAM6_LWTUNNEL is not set
 
+# bcm2711_defconfig also carries generic distro/debug compatibility that an
+# aarch64-only appliance does not use. Removing it avoids fake NUMA setup,
+# 32-bit syscall/emulation paths, tracing tables and module-version metadata.
+# CONFIG_IKCONFIG is not set
+# CONFIG_GENERIC_IRQ_DEBUGFS is not set
+# CONFIG_DEBUG_FS is not set
+# CONFIG_PROFILING is not set
+# CONFIG_FTRACE is not set
+# CONFIG_PM_DEBUG is not set
+# CONFIG_NUMA is not set
+# CONFIG_NUMA_EMU is not set
+# CONFIG_COMPAT is not set
+# CONFIG_ARMV8_DEPRECATED is not set
+# CONFIG_SWP_EMULATION is not set
+# CONFIG_CP15_BARRIER_EMULATION is not set
+# CONFIG_SETEND_EMULATION is not set
+# CONFIG_MODVERSIONS is not set
+# CONFIG_MODULE_SRCVERSION_ALL is not set
+# CONFIG_BLK_DEV_THROTTLING is not set
+# CONFIG_ZSWAP is not set
+# CONFIG_UEVENT_HELPER is not set
+# CONFIG_OF_CONFIGFS is not set
+
 # Filesystem/block facilities not used by SYSTEM/DATA ext4 storage.
 # CONFIG_BINFMT_MISC is not set
 # CONFIG_QUOTA is not set
@@ -121,6 +144,9 @@ CONFIG_NLS=y
 # CONFIG_PWM_PIO_RP1 is not set
 # CONFIG_PWM_RASPBERRYPI_POE is not set
 # CONFIG_BACKLIGHT_CLASS_DEVICE is not set
+# CONFIG_REGULATOR_RASPBERRYPI_TOUCHSCREEN_ATTINY is not set
+# CONFIG_REGULATOR_RASPBERRYPI_TOUCHSCREEN_V2 is not set
+# CONFIG_REGULATOR_WAVESHARE_TOUCHSCREEN is not set
 
 # The hardware-neutral native layer keeps the BCM2835 I2S controller and Linux
 # simple-card only. Concrete codec/HAT drivers belong to the final board profile.
