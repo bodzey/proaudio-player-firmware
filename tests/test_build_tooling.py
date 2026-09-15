@@ -14,6 +14,7 @@ BUILD_SCRIPTS = (
     SCRIPTS / "build.sh",
     SCRIPTS / "build-container.sh",
     SCRIPTS / "sync-dev-submodules.sh",
+    SCRIPTS / "sync-source-submodules.sh",
 )
 
 
@@ -80,17 +81,24 @@ def test_bootstrap_supports_major_linux_package_families_and_never_builds():
     assert "make -j" not in script
 
 
-def test_source_sync_follows_main_but_keeps_buildroot_pinned():
-    script = (SCRIPTS / "sync-dev-submodules.sh").read_text(encoding="utf-8")
-    assert "submodule update --init --recursive upstream/buildroot" in script
-    assert 'submodule update --init --remote --checkout "$path"' in script
-    assert '[[ "$branch" != main ]]' in script
-    assert "refs/remotes/origin/main" in script
+def test_source_sync_is_reproducible_and_gitlink_pinned():
+    script = (SCRIPTS / "sync-source-submodules.sh").read_text(encoding="utf-8")
+    assert "upstream/buildroot" in script
+    assert "sources/proaudio-player-native" in script
+    assert "sources/proaudio-player-webui" in script
+    assert 'git -C "$ROOT_DIR" submodule update --init --recursive "${SOURCE_PATHS[@]}"' in script
+    assert "--remote" not in script
     assert "refs/remotes/origin/dev" not in script
+    assert "refs/remotes/origin/main" not in script
+    assert 'rev-parse "HEAD:$path"' in script
     assert "status --porcelain" in script
-    assert "Buildroot submodule has local changes" in script
-    assert "legacy_lock" in script
-    assert 'unlink "$legacy_lock"' in script
+    assert "pinned revision" in script
+
+
+def test_legacy_sync_entry_point_delegates_to_reproducible_helper():
+    wrapper = (SCRIPTS / "sync-dev-submodules.sh").read_text(encoding="utf-8")
+    assert "sync-source-submodules.sh" in wrapper
+    assert "--remote" not in wrapper
 
 
 def test_container_builder_preserves_unprivileged_output_ownership():
