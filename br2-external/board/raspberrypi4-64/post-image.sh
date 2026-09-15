@@ -24,7 +24,7 @@ dd if=/dev/zero of="${DATA_IMAGE}" bs=1M count=0 seek="${DATA_IMAGE_SIZE_MIB}" s
 "${HOST_DIR}/sbin/mkfs.ext4" -F -q \
 	-L PROAUDIO_DATA \
 	-U 50524155-4441-5441-0000-000000000001 \
-	-m 1 \
+	-m 0 \
 	-O '^64bit' \
 	-E lazy_itable_init=0,lazy_journal_init=0 \
 	"${DATA_IMAGE}"
