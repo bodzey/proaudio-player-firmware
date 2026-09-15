@@ -18,6 +18,9 @@ CONFIG_BRCMFMAC_SDIO=y
 CONFIG_MMC=y
 CONFIG_MMC_BCM2835=y
 
+# Bluetooth is not used by ProAudio Player.
+# CONFIG_BT is not set
+
 # HDMI audio still needs the VC4/KMS HDMI pipeline. Do not provide a local
 # framebuffer, virtual terminal or 3D/video desktop path.
 CONFIG_DRM=y
@@ -51,7 +54,6 @@ CONFIG_USB_UAS=y
 # CONFIG_USB_PRINTER is not set
 # CONFIG_MEDIA_SUPPORT is not set
 # CONFIG_USB_VIDEO_CLASS is not set
-# CONFIG_BT_HCIBTUSB is not set
 
 # Player audio outputs: HDMI and USB DAC. Legacy analogue PWM audio is disabled
 # in config.txt; I2S/ASoC remains available for future carrier-board DACs.
