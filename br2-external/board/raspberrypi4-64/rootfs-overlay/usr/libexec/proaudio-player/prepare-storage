@@ -43,6 +43,12 @@ resolve_partition()
 	RESOLVED_PARENT_NAME=$parent_name
 }
 
+partition_table_size()
+{
+	sfdisk -d "$1" | sed -n \
+		"\\|^$2[[:space:]]*:| { s/.*size=[[:space:]]*\\([0-9][0-9]*\\).*/\\1/p; q; }"
+}
+
 ensure_data_layout()
 {
 	mkdir -p \
@@ -169,11 +175,25 @@ done
 unused_sectors=$((disk_sectors - data_partition_end))
 if [ "$unused_sectors" -gt "$minimum_free_sectors" ]; then
 	if [ -e "$pending_marker" ]; then
-		fail "partition expansion is still not visible after reboot"
+		log "stale partition expansion marker detected; retrying expansion"
+		rm -f "$pending_marker"
 	fi
 
 	log "expanding DATA partition '$data_partition' to fill '$disk'"
-	printf ',\n' | sfdisk --no-reread -N "$data_partition_number" "$disk"
+	# With sfdisk -N, omitted fields keep their previous values. Explicit '+'
+	# in the size field is therefore required to enlarge an existing partition.
+	printf ',+\n' | sfdisk --no-reread -N "$data_partition_number" "$disk"
+	sync
+
+	on_disk_size=$(partition_table_size "$disk" "$data_partition")
+	case $on_disk_size in
+		''|*[!0-9]*)
+			fail "could not verify the updated DATA partition size"
+			;;
+	esac
+	[ "$on_disk_size" -gt "$data_partition_sectors" ] || \
+		fail "partition table update did not enlarge DATA"
+
 	touch "$pending_marker"
 	sync
 	log "partition table updated; requesting the required one-time reboot"
