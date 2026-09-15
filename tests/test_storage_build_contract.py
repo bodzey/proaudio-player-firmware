@@ -23,7 +23,11 @@ def test_persistent_storage_boot_work_is_bounded_and_migration_safe():
         'if [ "$storage_ready" -eq 0 ] || [ -e "$pending_marker" ]; then'
         in storage
     )
+    assert "printf ',+\\n'" in storage
     assert 'sfdisk --no-reread -N "$data_partition_number" "$disk"' in storage
+    assert "partition_table_size" in storage
+    assert "stale partition expansion marker detected" in storage
+    assert "partition table update did not enlarge DATA" in storage
     assert 'resize2fs "$data_partition"' in storage
 
 
