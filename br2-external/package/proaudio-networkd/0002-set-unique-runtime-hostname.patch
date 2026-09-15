@@ -41,7 +41,7 @@ index 714f3b4..1111111 100755
      def setup_ssid(self):
          prefix = self.cfg["SETUP_SSID_PREFIX"].strip() or "ProAudio"
          return f"{prefix}-{self.device_serial_suffix()}"
-@@ -634,6 +650,8 @@ class NetworkDaemon:
+@@ -634,4 +650,6 @@ class NetworkDaemon:
          if not self.wait_for_networkmanager():
              raise RuntimeError("NetworkManager не готовий")
 +        # Set a stable unique mDNS/system hostname before external connectivity.
