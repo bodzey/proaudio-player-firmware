@@ -19,5 +19,8 @@ enable_tvout=0
 dtparam=audio=off
 dtoverlay=vc4-kms-v3d
 
+# Bluetooth is not part of the appliance; keep the onboard controller disabled.
+dtoverlay=disable-bt
+
 # No UART recovery/debug console in production.
 enable_uart=0
