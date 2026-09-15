@@ -72,7 +72,7 @@ def test_data_filesystem_uses_all_capacity():
     assert "\t-m 1 \\" not in post_image
 
 
-def test_alert_token_is_not_baked_into_board_overlay():
+def test_alert_token_is_not_baked_into_native_rootfs():
     overlay_token = (
         BOARD / "rootfs-overlay/etc/proaudio-player-alert/alerts-token"
     )
@@ -84,9 +84,12 @@ def test_alert_token_is_not_baked_into_board_overlay():
     )
 
     assert not overlay_token.exists()
-    for makefile in (native_makefile, legacy_makefile):
-        assert "$(INSTALL) -D -m 0600 /dev/null" in makefile
-        assert "$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token" in makefile
+    assert "/etc/proaudio-player-alert/alerts-token" not in native_makefile
+
+    # The legacy Python profile still owns its old immutable placeholder until
+    # that profile is retired/migrated. It must remain empty, never a baked key.
+    assert "$(INSTALL) -D -m 0600 /dev/null" in legacy_makefile
+    assert "$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token" in legacy_makefile
 
 
 def test_webui_reuses_verified_npm_cache():
