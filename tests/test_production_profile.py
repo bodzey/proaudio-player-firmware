@@ -25,7 +25,7 @@ def test_rpi4_production_profile_has_no_local_login_or_dev_banner():
     assert "NATIVE DEV" not in defconfig
 
 
-def test_boot_has_no_video_or_serial_console():
+def test_boot_has_no_video_serial_console_or_bluetooth():
     config = (BOARD / "config.txt").read_text(encoding="utf-8")
     cmdline = (BOARD / "cmdline.txt").read_text(encoding="utf-8")
 
@@ -35,6 +35,7 @@ def test_boot_has_no_video_or_serial_console():
     assert "enable_uart=0" in config
     assert "dtparam=audio=off" in config
     assert "dtoverlay=vc4-kms-v3d" in config
+    assert "dtoverlay=disable-bt" in config
     assert "console=" not in cmdline
     assert "quiet" in cmdline
     assert "loglevel=3" in cmdline
@@ -62,7 +63,7 @@ def test_kernel_keeps_hdmi_audio_but_removes_local_ui_and_debug_classes():
         "# CONFIG_USB_SERIAL is not set",
         "# CONFIG_USB_PRINTER is not set",
         "# CONFIG_MEDIA_SUPPORT is not set",
-        "# CONFIG_BT_HCIBTUSB is not set",
+        "# CONFIG_BT is not set",
         "# CONFIG_DEBUG_FS is not set",
         "# CONFIG_FTRACE is not set",
         "# CONFIG_PROFILING is not set",
