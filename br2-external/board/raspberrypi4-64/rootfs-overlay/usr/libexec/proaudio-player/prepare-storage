@@ -154,8 +154,10 @@ for candidate in /sys/class/block/*; do
 	candidate_start=$(cat "$candidate/start")
 	if [ "$candidate_start" -gt "$data_partition_start" ]; then
 		log "DATA is not the final partition on '$disk'; preserving the partition table"
-		resize2fs "$data_partition"
-		rm -f "$pending_marker"
+		if [ "$storage_ready" -eq 0 ] || [ -e "$pending_marker" ]; then
+			resize2fs "$data_partition"
+			rm -f "$pending_marker"
+		fi
 		ensure_data_layout
 		if [ "$storage_ready" -eq 0 ]; then
 			mark_storage_ready
