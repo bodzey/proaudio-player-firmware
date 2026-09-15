@@ -30,19 +30,6 @@ PROAUDIO_PLAYER_DEPENDENCIES += avahi proaudio-shairport-sync
 endif
 
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_DLNA),y)
-define PROAUDIO_PLAYER_INSTALL_DLNA_SYSTEMD
-	$(INSTALL) -D -m 0755 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/dlna-renderer.sh \
-		$(TARGET_DIR)/usr/libexec/proaudio-player/dlna-renderer.sh
-	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-dlna.service \
-		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-dlna.service
-	ln -sf /usr/lib/systemd/system/proaudio-player-dlna.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-dlna.service
-endef
-endif
-
-ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_DLNA),y)
 PROAUDIO_PLAYER_DEPENDENCIES += \
 	gmrender-resurrect \
 	gst1-libav \
@@ -110,6 +97,19 @@ define PROAUDIO_PLAYER_INSTALL_AIRPLAY_SYSTEMD
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-shairport.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-shairport.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-shairport.service
+endef
+endif
+
+ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_DLNA),y)
+define PROAUDIO_PLAYER_INSTALL_DLNA_SYSTEMD
+	$(INSTALL) -D -m 0755 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/dlna-renderer.sh \
+		$(TARGET_DIR)/usr/libexec/proaudio-player/dlna-renderer.sh
+	$(INSTALL) -D -m 0644 \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-dlna.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-dlna.service
+	ln -sf /usr/lib/systemd/system/proaudio-player-dlna.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-dlna.service
 endef
 endif
 
