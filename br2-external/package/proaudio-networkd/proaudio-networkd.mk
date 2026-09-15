@@ -17,6 +17,15 @@ PROAUDIO_NETWORKD_DEPENDENCIES = \
 	wireless-regdb \
 	wpa_supplicant
 
+# Local-site packages are rsynced directly and do not run Buildroot's normal
+# package-directory patch phase. Apply the provisioning fix explicitly before
+# configure so the daemon installed into the image is the tested patched copy.
+define PROAUDIO_NETWORKD_APPLY_LOCAL_PATCHES
+	$(APPLY_PATCHES) $(@D) $(PROAUDIO_NETWORKD_PKGDIR) \
+		0001-stabilize-ap-to-station-provisioning.patch
+endef
+PROAUDIO_NETWORKD_PRE_CONFIGURE_HOOKS += PROAUDIO_NETWORKD_APPLY_LOCAL_PATCHES
+
 define PROAUDIO_NETWORKD_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/proaudio-networkd \
 		$(TARGET_DIR)/usr/sbin/proaudio-networkd
