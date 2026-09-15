@@ -6,6 +6,7 @@ BOARD = ROOT / "br2-external/board/raspberrypi4-64"
 PLAYER_PACKAGE = ROOT / "br2-external/package/proaudio-player"
 NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
 WEBUI_PACKAGE = ROOT / "br2-external/package/proaudio-webui"
+SYSTEMD_OVERLAY = BOARD / "rootfs-overlay/etc/systemd/system"
 
 
 def test_persistent_storage_boot_work_is_bounded_and_migration_safe():
@@ -22,6 +23,31 @@ def test_persistent_storage_boot_work_is_bounded_and_migration_safe():
         'if [ "$storage_ready" -eq 0 ] || [ -e "$pending_marker" ]; then'
         in storage
     )
+    assert 'sfdisk --no-reread -N "$data_partition_number" "$disk"' in storage
+    assert 'resize2fs "$data_partition"' in storage
+
+
+def test_storage_dependent_path_units_do_not_join_early_paths_target():
+    for name in (
+        "proaudio-player-audio-output.path.d/storage.conf",
+        "proaudio-player-output-apply.path.d/storage.conf",
+    ):
+        dropin = (SYSTEMD_OVERLAY / name).read_text(encoding="utf-8")
+        assert "DefaultDependencies=no" in dropin
+        assert "Requires=proaudio-storage-layout.target" in dropin
+        assert "After=proaudio-storage-layout.target" in dropin
+        assert "Conflicts=shutdown.target" in dropin
+        assert "Before=shutdown.target" in dropin
+
+
+def test_networkd_wait_online_cannot_block_offline_boot():
+    override = (
+        SYSTEMD_OVERLAY
+        / "systemd-networkd-wait-online.service.d/proaudio.conf"
+    ).read_text(encoding="utf-8")
+
+    assert "ExecStart=" in override
+    assert "ExecStart=/bin/true" in override
 
 
 def test_shared_runtime_directory_is_explicit_and_private():
