@@ -16,7 +16,17 @@ proaudio_player_docker     proaudio-player-firmware
 Docker dev/test            Buildroot / Raspberry Pi 4 Model B
 ```
 
-This repository contains the embedded platform layer only. The native player and its factory announcement media are pinned together in the `sources/proaudio-player-native` Git submodule.
+This repository contains the embedded platform layer only. The native player
+and its factory announcement media are provided by the
+`sources/proaudio-player-native` Git submodule.
+
+Branch pairing is explicit:
+
+- `proaudio-player-firmware/main` is the production branch and pins a stable `proaudio-player-native/main` revision;
+- `proaudio-player-firmware/dev` follows the current `origin/dev` revisions of
+  native and Web UI before every build;
+- Buildroot always remains at the exact gitlink revision recorded by firmware,
+  so updating application sources cannot silently change the toolchain.
 
 ## Raspberry Pi 4 Model B hardware profile
 
@@ -109,39 +119,91 @@ The native source arbiter owns ordinary-source exclusivity. The transitional `au
 
 Application services run system-wide under the dedicated `proaudio-player` account. `systemd-timesyncd` provides clock synchronization for HTTPS API access and scheduled events.
 
-## Completely clean Raspberry Pi 4 build
+## Build-host setup
 
-Synchronize all repositories first:
+The repository separates privileged host setup from the firmware build:
+
+- `bootstrap-build-host.sh` installs only host tools, initializes pinned
+  Buildroot and synchronizes the current native/Web UI `dev` sources;
+- `check-build-host.sh` only validates the host and never installs anything;
+- `build.sh` never uses `sudo` and performs an incremental build by default.
+
+On Debian/Ubuntu, Fedora/RHEL-compatible systems, Arch, openSUSE or Alpine:
 
 ```bash
-git switch native
-git pull
-git submodule sync --recursive
-git submodule update --init --recursive
+git clone --branch dev \
+  --recurse-submodules \
+  https://github.com/bodzey/proaudio-player-firmware.git
+cd proaudio-player-firmware
+./scripts/bootstrap-build-host.sh -y
 ```
 
-Remove all generated Buildroot state and the previous configuration:
+Run the bootstrap without `-y` if package-manager confirmation is desired.
+Add `--with-qemu` only on a development host that needs the optional QEMU
+smoke test. The script may ask for `sudo`; the build itself must be run as a
+regular user.
+
+For an unsupported Linux distribution, or when modifying the host is
+undesirable, use the controlled Debian container (Docker or Podman):
 
 ```bash
-rm -rf upstream/buildroot/output
-rm -f upstream/buildroot/.config upstream/buildroot/.config.old
+./scripts/build-container.sh
 ```
 
-Downloaded source archives may remain in `upstream/buildroot/dl`; they are not build state.
+The repository and Buildroot download/output caches are bind-mounted, so
+subsequent container builds remain incremental. A native Buildroot build
+requires Linux; the container route is also the supported entry point from
+macOS or Windows hosts running Linux containers.
 
-Load the Raspberry Pi 4 Model B configuration:
+To validate an already prepared host without changing it:
 
 ```bash
-make -C upstream/buildroot \
-  BR2_EXTERNAL="$PWD/br2-external" \
-  proaudio_rpi4_64_defconfig
+./scripts/check-build-host.sh
 ```
 
-Build:
+Buildroot remains responsible for downloading and building its own host-side
+package tools. The bootstrap installs only the operating-system prerequisites
+needed to run Buildroot.
+
+## Raspberry Pi 4 development build
+
+Synchronize the development branch first:
 
 ```bash
-make -j8 -C upstream/buildroot \
-  BR2_EXTERNAL="$PWD/br2-external"
+git switch dev
+git pull --ff-only
+```
+
+Build the Raspberry Pi 4 image:
+
+```bash
+./scripts/build.sh
+```
+
+This keeps the pinned Buildroot toolchain, updates native and Web UI to their
+current `origin/dev`, validates the host, loads the canonical defconfig and
+reuses compatible Buildroot output. It never cleans implicitly. The wrapper
+records the successfully built native/Web UI/network revisions and automatically
+invalidates only a local-source package whose source revision changed. An
+existing output created before this mechanism gets one conservative refresh
+of those local packages to establish the baseline.
+
+After changing one of the local project components, invalidate only that
+Buildroot package before continuing the normal image build:
+
+```bash
+./scripts/build.sh --rebuild native
+./scripts/build.sh --rebuild webui
+./scripts/build.sh --rebuild network
+./scripts/build.sh --rebuild native --rebuild webui
+```
+
+Use `--jobs NUMBER` to control parallelism, `--configure-only` to load the
+profile without compiling, or an out-of-tree output directory to keep builds
+separate:
+
+```bash
+./scripts/build.sh --output /path/to/proaudio-rpi4-output
 ```
 
 The SD-card image is produced under:
@@ -149,6 +211,19 @@ The SD-card image is produced under:
 ```text
 upstream/buildroot/output/images/
 ```
+
+A full clean build is not required after ordinary firmware, player or Web UI
+changes. Use it only to recover from stale or incompatible Buildroot output,
+for example after changing toolchain/architecture or when an incremental
+build demonstrably fails:
+
+```bash
+./scripts/build.sh --clean
+```
+
+`--clean` runs Buildroot `distclean`, reloads the canonical profile and then
+rebuilds every selected package. Downloaded source archives in `dl/` are kept;
+they are an input cache rather than compiled build state.
 
 ## Verifying the generated kernel configuration
 
@@ -166,8 +241,9 @@ Expected functional state includes USB storage, USB audio, analogue Pi audio, Br
 QEMU is not the production hardware target:
 
 ```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio_qemu_aarch64_defconfig
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external"
+./scripts/bootstrap-build-host.sh --with-qemu
+./scripts/build.sh --profile qemu-aarch64
+./scripts/run-qemu.sh
 ```
 
 ## Player source integration
@@ -183,7 +259,7 @@ PROAUDIO_PLAYER_NATIVE_OVERRIDE_SRCDIR = /path/to/proaudio-player-native
 and rebuild with:
 
 ```bash
-make -C upstream/buildroot BR2_EXTERNAL="$PWD/br2-external" proaudio-player-native-rebuild all
+./scripts/build.sh --rebuild native
 ```
 
 ## Announcement media
@@ -198,14 +274,64 @@ Runtime media paths:
 /var/lib/proaudio-player-alert/media/minute_silence.mp3
 ```
 
+## Storage layout and first boot
+
+The Raspberry Pi image has three MBR partitions with a fixed disk signature:
+
+- a 32 MiB FAT boot partition;
+- a fixed 768 MiB ext4 SYSTEM partition labelled `PROAUDIO_SYSTEM`;
+- a minimal 64 MiB ext4 DATA partition labelled `PROAUDIO_DATA`.
+
+The kernel locates SYSTEM by its stable partition UUID
+(`PARTUUID=50524155-02`), so booting does not depend on names such as
+`/dev/mmcblk0`. The same layout works on SD, eMMC, NVMe and USB/SATA media.
+
+On first boot, `proaudio-storage.service` verifies that SYSTEM and DATA are
+direct partitions on the same boot disk and that DATA is the last partition.
+Only after those checks does it extend partition 3 to the remaining capacity.
+It then requests one automatic reboot. On the next boot it grows the ext4
+filesystem and initializes the persistent directory layout.
+
+If another partition follows DATA, the service preserves the partition table
+and uses the existing DATA size. It never guesses a device name and never
+resizes SYSTEM. This isolates firmware capacity from user media growth and
+prevents a full music library from filling the operating-system filesystem.
+
+Application paths remain stable through links into DATA:
+
+```text
+/srv/music                         -> /data/music
+/var/lib/proaudio-player           -> /data/player
+/var/lib/proaudio-player-alert     -> /data/player-alert
+```
+
+Factory announcement files live read-only under
+`/usr/share/proaudio-player/announcements`. Missing files are copied into
+DATA once; user replacements are never overwritten.
+
+Verification after the automatic first-boot reboot:
+
+```bash
+findmnt / /data
+lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTUUID,MOUNTPOINTS
+df -h / /data
+systemctl status data.mount proaudio-storage.service --no-pager
+journalctl -b -u data.mount -u proaudio-storage.service --no-pager
+readlink -f /srv/music /var/lib/proaudio-player /var/lib/proaudio-player-alert
+```
+
+This partition-layout change requires writing the new `sdcard.img`; it is not
+an in-place package update for devices flashed with the former two-partition
+image.
+
 ## Runtime data
 
 ```text
-/etc/proaudio-player-alert/       player configuration
-/etc/proaudio-networkd.conf       Wi-Fi provisioning configuration
-/var/lib/NetworkManager/          saved NetworkManager state
-/etc/NetworkManager/system-connections/ saved Wi-Fi profiles
-/var/lib/proaudio-player-alert/   controller and MPD state
-/var/lib/proaudio-player/         Spotify state
-/srv/music/                       local music library
+/etc/proaudio-player-alert/       player configuration (SYSTEM)
+/etc/proaudio-networkd.conf       Wi-Fi provisioning configuration (SYSTEM)
+/var/lib/NetworkManager/          saved NetworkManager state (SYSTEM)
+/etc/NetworkManager/system-connections/ saved Wi-Fi profiles (SYSTEM)
+/data/player-alert/               controller, MPD state and alert media (DATA)
+/data/player/                     persistent player state (DATA)
+/data/music/                      local music library (DATA)
 ```

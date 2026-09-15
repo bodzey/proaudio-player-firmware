@@ -4,4 +4,8 @@
 [submodule "sources/proaudio-player-native"]
 	path = sources/proaudio-player-native
 	url = ../proaudio-player-native.git
-	branch = main
+	branch = dev
+[submodule "sources/proaudio-player-webui"]
+	path = sources/proaudio-player-webui
+	url = ../proaudio-player-webui.git
+	branch = dev

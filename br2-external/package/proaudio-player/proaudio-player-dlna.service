@@ -1,7 +1,7 @@
 [Unit]
 Description=DLNA/UPnP renderer for ProAudio Player
-After=network.target proaudio-player-buses.service
-Requires=proaudio-player-buses.service
+After=proaudio-player-buses.service
+Wants=proaudio-player-buses.service
 
 [Service]
 Type=simple
@@ -10,9 +10,14 @@ Group=proaudio-player
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
 Environment=PULSE_SERVER=unix:/run/pulse/native
 Environment=PULSE_SINK=proaudio_player_music
+Environment=DLNA_INTERFACE=proaudio-dlna
+ExecStartPre=+/bin/sh -c '/sbin/ip link show proaudio-dlna >/dev/null 2>&1 || /sbin/ip link add proaudio-dlna type dummy'
+ExecStartPre=+/sbin/ip link set proaudio-dlna multicast on
+ExecStartPre=+/sbin/ip addr replace 169.254.253.1/32 dev proaudio-dlna
+ExecStartPre=+/sbin/ip link set proaudio-dlna up
 ExecStart=/usr/libexec/proaudio-player/dlna-renderer.sh
 Restart=always
-RestartSec=1
+RestartSec=2
 
 [Install]
 WantedBy=multi-user.target

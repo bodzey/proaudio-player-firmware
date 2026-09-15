@@ -1,0 +1,35 @@
+image boot.vfat {
+	vfat {
+		files = {
+#BOOT_FILES#
+		}
+	}
+
+	size = 32M
+}
+
+image sdcard.img {
+	hdimage {
+		partition-table-type = "mbr"
+		disk-signature = 0x50524155
+	}
+
+	partition boot {
+		partition-type = 0xC
+		bootable = "true"
+		image = "boot.vfat"
+		align = 1M
+	}
+
+	partition system {
+		partition-type = 0x83
+		image = "rootfs.ext4"
+		align = 1M
+	}
+
+	partition data {
+		partition-type = 0x83
+		image = "data.ext4"
+		align = 1M
+	}
+}

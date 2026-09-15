@@ -26,9 +26,10 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 	select BR2_PACKAGE_MPD_FFMPEG
 	select BR2_PACKAGE_MPD_MPC
 	help
-	  Native Rust control plane for ProAudio Player.
-	  Reuses the existing PipeWire/ALSA media path and protocol engines while
-	  replacing the Python alert, arbitration and web-control runtime.
+	  Native Rust control plane for ProAudio Player. Reuses the
+	  existing PipeWire/ALSA media path and protocol engines while
+	  replacing the Python alert, arbitration and web-control
+	  runtime.
 
 if BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 
@@ -37,12 +38,14 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY
 	default y
 	select BR2_PACKAGE_PROAUDIO_SHAIRPORT_SYNC
 	help
-	  Enable Shairport Sync with the PulseAudio backend and MPRIS support.
+	  Enable Shairport Sync with the PulseAudio backend and MPRIS
+	  support.
 
 config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA
 	bool "DLNA / UPnP renderer"
 	default y
 	select BR2_PACKAGE_GMRENDER_RESURRECT
+	select BR2_PACKAGE_IPROUTE2
 	select BR2_PACKAGE_GST1_PLUGINS_GOOD
 	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_AUDIOPARSERS
 	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_PULSE
@@ -57,7 +60,8 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_SPOTIFY
 	depends on BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS
 	select BR2_PACKAGE_PROAUDIO_SPOTIFYD
 	help
-	  Enable spotifyd with PulseAudio and system-bus MPRIS integration.
+	  Enable spotifyd with PulseAudio and system-bus MPRIS
+	  integration.
 
 comment "Spotify Connect needs Rust support for the target architecture"
 	depends on !BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS

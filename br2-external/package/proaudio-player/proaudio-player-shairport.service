@@ -1,8 +1,8 @@
 [Unit]
 Description=AirPlay receiver for ProAudio Player
 After=dbus.service network.target avahi-daemon.service proaudio-player-buses.service
-Wants=dbus.service
-Requires=avahi-daemon.service proaudio-player-buses.service
+Wants=dbus.service proaudio-player-buses.service
+Requires=avahi-daemon.service
 
 [Service]
 Type=simple
