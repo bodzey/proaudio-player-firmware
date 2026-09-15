@@ -9,7 +9,10 @@ boot_delay=0
 disable_overscan=1
 display_auto_detect=1
 camera_auto_detect=1
-dtoverlay=vc4-kms-v3d
+# The Pi 4 KMS overlay otherwise reserves 512 MiB CMA on this 1 GiB board.
+# 128 MiB is ample for the 1080p development console while leaving RAM to the
+# player stack. HDMI audio remains enabled by the VC4 overlay.
+dtoverlay=vc4-kms-v3d,cma-128
 
 # Keep analogue and HDMI audio support available for diagnostics.
 dtparam=audio=on
