@@ -4,12 +4,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "br2-external/package/proaudio-player"
 SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
+NETWORK_PACKAGE = ROOT / "br2-external/package/proaudio-networkd"
 
 
-def test_core_submodule_uses_protocol_relative_repository_url():
+def test_native_submodule_uses_protocol_relative_repository_url():
     modules = (ROOT / ".gitmodules").read_text(encoding="utf-8")
-    assert "path = sources/proaudio-player" in modules
-    assert "url = ../proaudio_player.git" in modules
+    assert "path = sources/proaudio-player-native" in modules
+    assert "url = ../proaudio-player-native.git" in modules
 
 
 def test_firmware_installs_core_media_and_wireplumber_rule():
@@ -73,3 +74,189 @@ def test_audio_bus_service_retries_if_hardware_is_late():
     assert "Type=oneshot" in service
     assert "Restart=on-failure" in service
     assert "RestartSec=5" in service
+
+
+def test_unplugged_ethernet_does_not_degrade_boot():
+    network = (NETWORK_PACKAGE / "10-proaudio-ethernet.network").read_text(
+        encoding="utf-8"
+    )
+    assert "[Link]\nRequiredForOnline=no" in network
+    assert "[Network]\nDHCP=ipv4" in network
+
+
+def test_avahi_is_the_only_mdns_responder():
+    resolved = (NETWORK_PACKAGE / "10-proaudio-resolved.conf").read_text(
+        encoding="utf-8"
+    )
+    makefile = (NETWORK_PACKAGE / "proaudio-networkd.mk").read_text(
+        encoding="utf-8"
+    )
+    assert "[Resolve]\nMulticastDNS=no\nLLMNR=no" in resolved
+    assert "resolved.conf.d/10-proaudio.conf" in makefile
+
+
+def test_wifi_regdomain_is_early_and_provisioning_avoids_duplicate_scan():
+    cmdline = (
+        ROOT / "br2-external/board/raspberrypi4-64/cmdline.txt"
+    ).read_text(encoding="utf-8")
+    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
+
+    assert "cfg80211.ieee80211_regdom=UA" in cmdline
+    assert '"device", "wifi", "rescan"' not in daemon
+    assert '"--rescan", "auto"' in daemon
+
+
+def test_mpd_first_boot_runtime_files_exist_before_service_start():
+    storage = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
+        "proaudio-player/prepare-storage"
+    ).read_text(encoding="utf-8")
+    assert "for file in database state; do" in storage
+    assert ': > "$data_mount/player-alert/mpd/$file"' in storage
+    assert 'chmod 0640 "$data_mount/player-alert/mpd/$file"' in storage
+
+
+def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
+    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
+    assert 'f"--dhcp-option=114,http://{addr}/"' in daemon
+    assert "urllib.parse.urlsplit(self.path).path" in daemon
+    assert "self._redirect_setup()" in daemon
+
+
+def test_storage_layout_is_device_agnostic_and_ordered():
+    board = ROOT / "br2-external/board/raspberrypi4-64"
+    overlay = board / "rootfs-overlay"
+    systemd = overlay / "usr/lib/systemd/system"
+    script = (
+        overlay / "usr/libexec/proaudio-player/prepare-storage"
+    ).read_text(encoding="utf-8")
+    service = (systemd / "proaudio-storage.service").read_text(encoding="utf-8")
+    data_mount = (systemd / "data.mount").read_text(encoding="utf-8")
+    layout = (systemd / "proaudio-storage-layout.target").read_text(encoding="utf-8")
+    music_mount = (systemd / "srv-music.mount").read_text(encoding="utf-8")
+    player_mount = (systemd / "var-lib-proaudio\\x2dplayer.mount").read_text(
+        encoding="utf-8"
+    )
+    alert_mount = (
+        systemd / "var-lib-proaudio\\x2dplayer\\x2dalert.mount"
+    ).read_text(encoding="utf-8")
+    genimage = (board / "genimage.cfg.in").read_text(encoding="utf-8")
+    cmdline = (board / "cmdline.txt").read_text(encoding="utf-8")
+    post_build = (board / "post-build.sh").read_text(encoding="utf-8")
+    tmpfiles = (PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
+
+    assert "root=PARTUUID=50524155-02" in cmdline
+    assert "root=/dev/mmcblk" not in cmdline
+    assert "disk-signature = 0x50524155" in genimage
+    assert "partition data" in genimage
+    assert 'image = "data.ext4"' in genimage
+
+    assert 'findmnt -n -o SOURCE,FSTYPE "$data_mount"' in script
+    assert "SYSTEM and DATA are not on the same boot disk" in script
+    assert "DATA is not the final partition" in script
+    assert 'resize2fs "$data_partition"' in script
+    assert "/dev/mmcblk0" not in script
+    assert "Requires=data.mount" in service
+    assert "After=data.mount" in service
+    assert "systemd-tmpfiles-setup.service" not in service
+    assert "TimeoutStartSec=0" in service
+    assert "What=/dev/disk/by-partuuid/50524155-03" in data_mount
+    assert "Options=noatime,nodev,nosuid,noexec" in data_mount
+
+    assert "ln -s /data" not in post_build
+    assert 'if [ -L "$path" ]' in post_build
+    assert "/data/" not in tmpfiles
+
+    assert "Requires=srv-music.mount" in layout
+    assert "var-lib-proaudio\\x2dplayer.mount" in layout
+    assert "var-lib-proaudio\\x2dplayer\\x2dalert.mount" in layout
+
+    for mount, source, target, mode in (
+        (music_mount, "/data/music", "/srv/music", "0755"),
+        (player_mount, "/data/player", "/var/lib/proaudio-player", "0750"),
+        (
+            alert_mount,
+            "/data/player-alert",
+            "/var/lib/proaudio-player-alert",
+            "0750",
+        ),
+    ):
+        assert "Requires=proaudio-storage.service" in mount
+        assert "After=proaudio-storage.service" in mount
+        assert f"What={source}" in mount
+        assert f"Where={target}" in mount
+        assert "Options=bind" in mount
+        assert f"DirectoryMode={mode}" in mount
+
+
+def test_rpi_profiles_share_fixed_system_and_growable_data_contract():
+    for name in ("proaudio_rpi4_64_defconfig", "proaudio_rpi4_64_native_defconfig"):
+        defconfig = (ROOT / "br2-external/configs" / name).read_text(encoding="utf-8")
+        assert 'BR2_TARGET_ROOTFS_EXT2_LABEL="PROAUDIO_SYSTEM"' in defconfig
+        assert 'BR2_TARGET_ROOTFS_EXT2_SIZE="768M"' in defconfig
+        assert "BR2_PACKAGE_E2FSPROGS_RESIZE2FS=y" in defconfig
+        assert "BR2_PACKAGE_UTIL_LINUX_BINARIES=y" in defconfig
+        assert (
+            'BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_PROAUDIO_PATH)/'
+            'board/raspberrypi4-64/post-image.sh"'
+        ) in defconfig
+
+
+def test_player_services_require_initialized_data_storage():
+    systemd = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/etc/systemd/system"
+    )
+    for unit in (
+        "proaudio-player-buses.service",
+        "proaudio-player-native.service",
+        "proaudio-player-alert.service",
+        "proaudio-player-mpd.service",
+        "proaudio-player-spotifyd.service",
+        "proaudio-player-shairport.service",
+        "proaudio-player-dlna.service",
+        "proaudio-player-webui.service",
+        "proaudio-player-audio-output.path",
+        "proaudio-player-output-apply.path",
+    ):
+        dropin = (systemd / f"{unit}.d/storage.conf").read_text(encoding="utf-8")
+        assert "Requires=proaudio-storage-layout.target" in dropin
+        assert "After=proaudio-storage-layout.target" in dropin
+
+    native_dropin = (
+        systemd / "proaudio-player-native.service.d/storage.conf"
+    ).read_text(encoding="utf-8")
+    assert "[Service]\nStateDirectory=\n" in native_dropin
+
+    overlay = ROOT / "br2-external/board/raspberrypi4-64/rootfs-overlay"
+    assert not (overlay / "usr/libexec/proaudio-player/grow-rootfs").exists()
+    assert not (overlay / "usr/lib/systemd/system/proaudio-grow-rootfs.service").exists()
+
+
+def test_alert_media_and_runtime_controls_use_persistent_storage():
+    native = ROOT / "sources/proaudio-player-native"
+    webui = ROOT / "sources/proaudio-player-webui"
+    config = (native / "config/config.yaml.example").read_text(encoding="utf-8")
+    backend = (native / "src/api/backend.rs").read_text(encoding="utf-8")
+    alerts = (native / "src/alerts.rs").read_text(encoding="utf-8")
+    types = (webui / "src/api/types.ts").read_text(encoding="utf-8")
+    panel = (webui / "src/features/alerts/AlertsPanel.tsx").read_text(encoding="utf-8")
+    storage = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
+        "proaudio-player/prepare-storage"
+    ).read_text(encoding="utf-8")
+
+    for name in ("alarm_start.mp3", "alarm_end.mp3", "minute_silence.mp3"):
+        assert f'/var/lib/proaudio-player-alert/media/{name}' in config
+        assert name in storage
+
+    assert '"/settings/alerts/media"' in backend
+    assert '"/settings/alerts/media/{kind}"' in backend
+    assert "atomic_file::write" in backend
+    assert "notifications_enabled" in alerts
+    assert "export type AlertMediaKind" in types
+    assert "minute_silence_enabled: boolean" in types
+    assert "Файли сповіщень" in panel
+    assert "Увімкнути систему сповіщень" in panel

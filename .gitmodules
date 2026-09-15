@@ -5,3 +5,7 @@
 	path = sources/proaudio-player-native
 	url = ../proaudio-player-native.git
 	branch = main
+[submodule "sources/proaudio-player-webui"]
+	path = sources/proaudio-player-webui
+	url = ../proaudio-player-webui.git
+	branch = main

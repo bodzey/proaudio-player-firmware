@@ -5,6 +5,9 @@
 CONFIG_GPIOLIB=y
 CONFIG_GPIO_CDEV=y
 
+# Private non-loopback transport interface for the hidden gmediarender worker.
+CONFIG_DUMMY=y
+
 # Raspberry Pi 4 Model B onboard Wi-Fi (BCM43455 over SDIO).
 CONFIG_WLAN=y
 CONFIG_CFG80211=m

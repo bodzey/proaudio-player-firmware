@@ -1,0 +1,3 @@
+[flake8]
+per-file-ignores =
+    br2-external/package/proaudio-networkd/proaudio-networkd:E501

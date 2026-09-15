@@ -1,0 +1,5 @@
+[Unit]
+Description=ProAudio persistent storage layout
+Requires=srv-music.mount var-lib-proaudio\x2dplayer.mount var-lib-proaudio\x2dplayer\x2dalert.mount
+After=srv-music.mount var-lib-proaudio\x2dplayer.mount var-lib-proaudio\x2dplayer\x2dalert.mount
+Before=multi-user.target

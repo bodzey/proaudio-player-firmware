@@ -1,0 +1,13 @@
+[Unit]
+Description=ProAudio persistent data partition
+Before=local-fs.target
+
+[Mount]
+What=/dev/disk/by-partuuid/50524155-03
+Where=/data
+Type=ext4
+Options=noatime,nodev,nosuid,noexec
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target

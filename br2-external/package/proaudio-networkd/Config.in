@@ -27,10 +27,11 @@ config BR2_PACKAGE_PROAUDIO_NETWORKD
 	select BR2_PACKAGE_IW
 	select BR2_PACKAGE_WIRELESS_REGDB
 	help
-	  Headless Wi-Fi provisioning for ProAudio Player on Raspberry Pi 4.
-	  With no saved Wi-Fi profile it starts a temporary setup access point
-	  and captive portal. Holding BCM GPIO26 (physical pin 37) for five
-	  seconds re-enters setup mode; physical pin 39 is the adjacent GND.
+	  Headless Wi-Fi provisioning for ProAudio Player on
+	  Raspberry Pi 4. With no saved Wi-Fi profile it starts a
+	  temporary setup access point and captive portal. Holding
+	  BCM GPIO26 (physical pin 37) for five seconds re-enters
+	  setup mode; physical pin 39 is the adjacent GND.
 
 comment "proaudio-networkd requirements are not satisfied"
 	depends on !BR2_INIT_SYSTEMD || !BR2_PACKAGE_HAS_UDEV || !BR2_USE_MMU || \

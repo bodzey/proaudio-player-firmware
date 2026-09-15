@@ -1,0 +1,84 @@
+# ProAudio Player production kernel policy for Raspberry Pi 4.
+# Keep only hardware/features required by the appliance, networking, storage,
+# audio playback and the physical setup button.
+
+# Physical setup button and private DLNA transport interface.
+CONFIG_GPIOLIB=y
+CONFIG_GPIO_CDEV=y
+CONFIG_DUMMY=y
+
+# Raspberry Pi 4 onboard Wi-Fi (BCM43455 over SDIO).
+CONFIG_WLAN=y
+CONFIG_CFG80211=m
+CONFIG_RFKILL=y
+CONFIG_WLAN_VENDOR_BROADCOM=y
+CONFIG_BRCMFMAC=m
+CONFIG_BRCMFMAC_PROTO_BCDC=y
+CONFIG_BRCMFMAC_SDIO=y
+CONFIG_MMC=y
+CONFIG_MMC_BCM2835=y
+
+# HDMI audio still needs the VC4/KMS HDMI pipeline. Do not provide a local
+# framebuffer, virtual terminal or 3D/video desktop path.
+CONFIG_DRM=y
+CONFIG_DRM_VC4=y
+# CONFIG_DRM_V3D is not set
+# CONFIG_DRM_FBDEV_EMULATION is not set
+# CONFIG_FB is not set
+# CONFIG_FRAMEBUFFER_CONSOLE is not set
+# CONFIG_VT is not set
+
+# No local keyboard/mouse/HID console in the appliance image.
+CONFIG_INPUT=y
+# CONFIG_INPUT_KEYBOARD is not set
+# CONFIG_INPUT_MOUSE is not set
+# CONFIG_INPUT_JOYSTICK is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_HID is not set
+# CONFIG_HIDRAW is not set
+# CONFIG_USB_HID is not set
+
+# USB remains available for DACs and removable media only.
+CONFIG_USB=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_SCSI=y
+CONFIG_BLK_DEV_SD=y
+CONFIG_USB_STORAGE=y
+CONFIG_USB_UAS=y
+# CONFIG_USB_ACM is not set
+# CONFIG_USB_SERIAL is not set
+# CONFIG_USB_NET_DRIVERS is not set
+# CONFIG_USB_PRINTER is not set
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_USB_VIDEO_CLASS is not set
+# CONFIG_BT_HCIBTUSB is not set
+
+# Player audio outputs: HDMI and USB DAC. Legacy analogue PWM audio is disabled
+# in config.txt; I2S/ASoC remains available for future carrier-board DACs.
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_PCM=y
+# CONFIG_SND_BCM2835 is not set
+CONFIG_SND_USB_AUDIO=y
+CONFIG_SND_SOC=y
+CONFIG_SND_SOC_HDMI_CODEC=m
+
+# Filesystems useful to the appliance and removable media.
+CONFIG_EXT4_FS=y
+CONFIG_MSDOS_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_EXFAT_FS=m
+CONFIG_NTFS3_FS=m
+
+# Production hardening / size reduction: no interactive kernel debugging,
+# tracing, profiling or debug filesystems. Keep printk/journal diagnostics for
+# remote operational support over SSH.
+# CONFIG_DEBUG_KERNEL is not set
+# CONFIG_DEBUG_FS is not set
+# CONFIG_DYNAMIC_DEBUG is not set
+# CONFIG_MAGIC_SYSRQ is not set
+# CONFIG_KGDB is not set
+# CONFIG_KPROBES is not set
+# CONFIG_FTRACE is not set
+# CONFIG_PROFILING is not set
+CONFIG_DEBUG_INFO_NONE=y
