@@ -52,7 +52,7 @@ def test_network_patches_apply_in_build_order(tmp_path):
     assert "self.start_ap()" in failure_tail
 
 
-def test_dev_kernel_is_audio_appliance_profile():
+def test_dev_kernel_is_native_audio_appliance_profile():
     config = (BOARD / "config.txt").read_text(encoding="utf-8")
     fragment = (BOARD / "linux-headless-usb.fragment").read_text(encoding="utf-8")
 
@@ -63,7 +63,18 @@ def test_dev_kernel_is_audio_appliance_profile():
     assert "display_auto_detect=0" in config
     assert "max_framebuffers=0" in config
 
+    # Runtime contract derived from proaudio-player-native: onboard Ethernet and
+    # Broadcom full-MAC Wi-Fi, IPv4 multicast discovery, GPIO setup control,
+    # ext4 state/music, plus HDMI/USB/I2S audio outputs.
     for setting in (
+        "CONFIG_GPIOLIB=y",
+        "CONFIG_GPIO_CDEV=y",
+        "CONFIG_DUMMY=y",
+        "CONFIG_IP_MULTICAST=y",
+        "CONFIG_BCMGENET=y",
+        "CONFIG_CFG80211=m",
+        "CONFIG_BRCMFMAC=m",
+        "CONFIG_BRCMFMAC_SDIO=y",
         "CONFIG_DRM=y",
         "CONFIG_DRM_VC4=y",
         "CONFIG_SND_USB_AUDIO=y",
@@ -71,13 +82,17 @@ def test_dev_kernel_is_audio_appliance_profile():
         "CONFIG_SND_SOC_HDMI_CODEC=m",
         "CONFIG_SND_BCM2835_SOC_I2S=m",
         "CONFIG_SND_SIMPLE_CARD=m",
-        "CONFIG_BRCMFMAC=m",
-        "CONFIG_BRCMFMAC_SDIO=y",
+        "CONFIG_USB=y",
+        "CONFIG_USB_XHCI_HCD=y",
         "CONFIG_EXT4_FS=y",
+        "CONFIG_TMPFS=y",
     ):
         assert setting in fragment
 
+    # Current native runtime has no video UI, Bluetooth, removable-drive mount
+    # policy, alternate NIC/WLAN support, router stack or non-ext4 music store.
     for symbol in (
+        "CONFIG_COMPILE_TEST",
         "CONFIG_DRM_V3D",
         "CONFIG_DRM_VC4_HDMI_CEC",
         "CONFIG_FB",
@@ -93,15 +108,52 @@ def test_dev_kernel_is_audio_appliance_profile():
         "CONFIG_STAGING",
         "CONFIG_HID",
         "CONFIG_BT",
+        "CONFIG_SND_SOC_ALL_CODECS",
         "CONFIG_MD",
         "CONFIG_BLK_DEV_DM",
         "CONFIG_MTD",
-        "CONFIG_IIO",
-        "CONFIG_RTC_CLASS",
+        "CONFIG_SCSI",
+        "CONFIG_USB_STORAGE",
+        "CONFIG_USB_UAS",
+        "CONFIG_USB_DWCOTG",
+        "CONFIG_USB_DWC2",
+        "CONFIG_USB_DWC3",
+        "CONFIG_USB_GADGET",
+        "CONFIG_USB_NET_DRIVERS",
+        "CONFIG_USB_SERIAL",
+        "CONFIG_B43",
+        "CONFIG_B43LEGACY",
+        "CONFIG_WLAN_VENDOR_ATH",
+        "CONFIG_WLAN_VENDOR_INTEL",
+        "CONFIG_WLAN_VENDOR_INTERSIL",
+        "CONFIG_WLAN_VENDOR_MARVELL",
+        "CONFIG_WLAN_VENDOR_MEDIATEK",
+        "CONFIG_WLAN_VENDOR_REALTEK",
+        "CONFIG_QCA7000_SPI",
+        "CONFIG_QCA7000_UART",
+        "CONFIG_R8169",
+        "CONFIG_MSE102X",
+        "CONFIG_WIZNET_W5100",
         "CONFIG_NETFILTER",
+        "CONFIG_NET_SCHED",
+        "CONFIG_IP_SCTP",
+        "CONFIG_CEPH_LIB",
+        "CONFIG_NET_NSH",
+        "CONFIG_MPLS",
+        "CONFIG_BRIDGE",
+        "CONFIG_VLAN_8021Q",
+        "CONFIG_NET_DSA",
         "CONFIG_CAN",
         "CONFIG_NFC",
-        "CONFIG_USB_GADGET",
+        "CONFIG_IIO",
+        "CONFIG_RTC_CLASS",
+        "CONFIG_MSDOS_FS",
+        "CONFIG_VFAT_FS",
+        "CONFIG_EXFAT_FS",
+        "CONFIG_NTFS3_FS",
+        "CONFIG_NLS",
+        "CONFIG_NFS_FS",
+        "CONFIG_CIFS",
     ):
         assert f"# {symbol} is not set" in fragment
 
