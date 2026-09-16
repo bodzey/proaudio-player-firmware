@@ -6,6 +6,7 @@ BOARD = ROOT / "br2-external/board/raspberrypi4-64"
 CONFIGS = ROOT / "br2-external/configs"
 NETWORK = ROOT / "br2-external/package/proaudio-networkd"
 SHAIRPORT = ROOT / "br2-external/package/proaudio-shairport-sync"
+SPOTIFY = ROOT / "br2-external/package/proaudio-spotifyd"
 
 
 def test_dev_kernel_is_audio_only_but_keeps_all_rpi_audio_outputs():
@@ -87,6 +88,10 @@ def test_native_rootfs_is_pure_pipewire_and_drops_unused_systemd_tools():
     shairport_makefile = (SHAIRPORT / "proaudio-shairport-sync.mk").read_text(
         encoding="utf-8"
     )
+    spotify_config = (SPOTIFY / "Config.in").read_text(encoding="utf-8")
+    spotify_makefile = (SPOTIFY / "proaudio-spotifyd.mk").read_text(
+        encoding="utf-8"
+    )
 
     for disabled in (
         "# BR2_PACKAGE_SYSTEMD_VCONSOLE is not set",
@@ -103,6 +108,12 @@ def test_native_rootfs_is_pure_pipewire_and_drops_unused_systemd_tools():
     assert "select BR2_PACKAGE_PIPEWIRE" in shairport_config
     assert "--without-pa" in shairport_makefile
     assert "--with-pw" in shairport_makefile
+
+    assert "BR2_PACKAGE_PULSEAUDIO" not in spotify_config
+    assert "BR2_PACKAGE_PULSEAUDIO_HAS_ATOMIC" not in spotify_config
+    assert "select BR2_PACKAGE_ALSA_LIB" in spotify_config
+    assert "select BR2_PACKAGE_DBUS" in spotify_config
+    assert "--no-default-features --features alsa_backend,dbus_mpris" in spotify_makefile
 
     for binary in (
         "pulseaudio",
