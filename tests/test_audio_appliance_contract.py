@@ -127,10 +127,21 @@ def test_native_rootfs_is_pure_pipewire_and_drops_unused_systemd_tools():
         "pamon",
     ):
         assert f'"$TARGET_DIR/usr/bin/{binary}"' in post_build
+    for artifact in (
+        '"$TARGET_DIR/usr/lib/systemd/system/pipewire-pulse.service"',
+        '"$TARGET_DIR/usr/lib/systemd/system/pipewire-pulse.socket"',
+        '"$TARGET_DIR/usr/lib/systemd/user/pipewire-pulse.service"',
+        '"$TARGET_DIR/usr/lib/systemd/user/pipewire-pulse.socket"',
+        '"$TARGET_DIR/usr/share/pipewire/pipewire-pulse.conf"',
+        '"$TARGET_DIR/usr/share/pipewire/pipewire-pulse.conf.avail"',
+    ):
+        assert artifact in post_build
     assert '"$TARGET_DIR"/usr/lib/pulse-*/modules' in post_build
     assert "libpulse" in post_build
     assert "pw-record" in post_build
     assert "ERROR: libpulse reappeared" in post_build
+    assert "-name 'pipewire-pulse*'" in post_build
+    assert "ERROR: pipewire-pulse compatibility artifacts remain" in post_build
 
 
 def test_unique_hostname_patch_uses_same_device_identity_as_setup_ssid():
