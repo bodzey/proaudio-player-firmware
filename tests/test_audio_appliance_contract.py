@@ -71,6 +71,8 @@ def test_native_prune_fragment_blocks_bcm2711_residue():
         "# CONFIG_MODVERSIONS is not set",
         "# CONFIG_OF_CONFIGFS is not set",
         "# CONFIG_REGULATOR_RASPBERRYPI_TOUCHSCREEN_ATTINY is not set",
+        "# CONFIG_BCM2835_VCHIQ_MMAL is not set",
+        "# CONFIG_BCM_VC_SM_CMA is not set",
         "# CONFIG_SND_RPI_SIMPLE_SOUNDCARD is not set",
         "# CONFIG_SND_SOC_PCM5102A is not set",
         "# CONFIG_SND_SOC_PCM512x_I2C is not set",
