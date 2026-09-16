@@ -5,28 +5,37 @@ ROOT = Path(__file__).resolve().parents[1]
 BOARD = ROOT / "br2-external/board/raspberrypi4-64"
 CONFIGS = ROOT / "br2-external/configs"
 NETWORK = ROOT / "br2-external/package/proaudio-networkd"
+SHAIRPORT = ROOT / "br2-external/package/proaudio-shairport-sync"
 
 
-def test_dev_kernel_is_audio_only_but_keeps_hdmi_audio():
+def test_dev_kernel_is_audio_only_but_keeps_all_rpi_audio_outputs():
     fragment = (BOARD / "linux-headless-usb.fragment").read_text(encoding="utf-8")
     config = (BOARD / "config.txt").read_text(encoding="utf-8")
     cmdline = (BOARD / "cmdline.txt").read_text(encoding="utf-8")
 
     assert "CONFIG_DRM_VC4=y" in fragment
     assert "CONFIG_SND_SOC_HDMI_CODEC=m" in fragment
+    assert "CONFIG_STAGING=y" in fragment
+    assert "CONFIG_BCM_VIDEOCORE=y" in fragment
+    assert "CONFIG_BCM2835_VCHIQ=y" in fragment
+    assert "CONFIG_SND_BCM2835=m" in fragment
     for disabled in (
         "# CONFIG_DRM_V3D is not set",
         "# CONFIG_FB is not set",
         "# CONFIG_FRAMEBUFFER_CONSOLE is not set",
         "# CONFIG_VT is not set",
         "# CONFIG_MEDIA_SUPPORT is not set",
-        "# CONFIG_SND_BCM2835 is not set",
+        "# CONFIG_STAGING_MEDIA is not set",
+        "# CONFIG_VCHIQ_CDEV is not set",
+        "# CONFIG_R8712U is not set",
+        "# CONFIG_VT6656 is not set",
+        "# CONFIG_FB_TFT is not set",
     ):
         assert disabled in fragment
     assert "camera_auto_detect=0" in config
     assert "display_auto_detect=0" in config
     assert "max_framebuffers=0" in config
-    assert "dtparam=audio=off" in config
+    assert "dtparam=audio=on" in config
     assert "console=tty1" not in cmdline
     assert "console=ttyAMA0,115200" in cmdline
 
@@ -74,6 +83,10 @@ def test_native_rootfs_is_pure_pipewire_and_drops_unused_systemd_tools():
         encoding="utf-8"
     )
     post_build = (BOARD / "post-build-native.sh").read_text(encoding="utf-8")
+    shairport_config = (SHAIRPORT / "Config.in").read_text(encoding="utf-8")
+    shairport_makefile = (SHAIRPORT / "proaudio-shairport-sync.mk").read_text(
+        encoding="utf-8"
+    )
 
     for disabled in (
         "# BR2_PACKAGE_SYSTEMD_VCONSOLE is not set",
@@ -85,6 +98,12 @@ def test_native_rootfs_is_pure_pipewire_and_drops_unused_systemd_tools():
         assert disabled in defconfig
 
     assert "BR2_PACKAGE_PULSEAUDIO=y" not in defconfig
+    assert "BR2_PACKAGE_PULSEAUDIO" not in shairport_config
+    assert "BR2_PACKAGE_PULSEAUDIO_HAS_ATOMIC" not in shairport_config
+    assert "select BR2_PACKAGE_PIPEWIRE" in shairport_config
+    assert "--without-pa" in shairport_makefile
+    assert "--with-pw" in shairport_makefile
+
     for binary in (
         "pulseaudio",
         "pipewire-pulse",
