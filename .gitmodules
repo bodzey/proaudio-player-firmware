@@ -4,7 +4,7 @@
 [submodule "sources/proaudio-player-native"]
 	path = sources/proaudio-player-native
 	url = ../proaudio-player-native.git
-	branch = feature/pure-pipewire
+	branch = dev
 [submodule "sources/proaudio-player-webui"]
 	path = sources/proaudio-player-webui
 	url = ../proaudio-player-webui.git
