@@ -13,7 +13,6 @@ PROAUDIO_PLAYER_NATIVE_CARGO_ENV = \
 PROAUDIO_PLAYER_NATIVE_DEPENDENCIES = \
 	mpd \
 	pipewire \
-	pulseaudio \
 	host-pkgconf
 
 # cargo-package normally vendors dependencies during the download post-process.
