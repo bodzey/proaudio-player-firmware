@@ -54,6 +54,32 @@ for pulse_modules in "$TARGET_DIR"/usr/lib/pulse-*/modules; do
 	rm -rf "$pulse_modules"
 done
 
+# These PipeWire components are not part of the embedded audio appliance:
+# video/test generators, FFmpeg SPA helpers and RAOP sender/discovery modules.
+# DLNA keeps its own GStreamer/FFmpeg stack and AirPlay reception is provided
+# by Shairport Sync, so none of these are required by the player runtime.
+rm -f \
+	"$TARGET_DIR/usr/lib/spa-0.2/audiotestsrc/libspa-audiotestsrc.so" \
+	"$TARGET_DIR/usr/lib/spa-0.2/ffmpeg/libspa-ffmpeg.so" \
+	"$TARGET_DIR/usr/lib/spa-0.2/videoconvert/libspa-videoconvert.so" \
+	"$TARGET_DIR/usr/lib/spa-0.2/videotestsrc/libspa-videotestsrc.so" \
+	"$TARGET_DIR/usr/lib/pipewire-0.3/libpipewire-module-raop-discover.so" \
+	"$TARGET_DIR/usr/lib/pipewire-0.3/libpipewire-module-raop-sink.so"
+
+# Avahi is required for mDNS/Bonjour advertising, but avahi-dnsconfd is a
+# separate DNS-configuration helper. systemd-resolved owns DNS policy here.
+rm -f \
+	"$TARGET_DIR/usr/sbin/avahi-dnsconfd" \
+	"$TARGET_DIR/etc/avahi/avahi-dnsconfd.action" \
+	"$TARGET_DIR/usr/lib/systemd/system/avahi-dnsconfd.service" \
+	"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/avahi-dnsconfd.service"
+
+# No player service requires network-online.target. NetworkManager/networkd
+# converge independently and long-running receivers already restart/recover.
+rm -f \
+	"$TARGET_DIR/etc/systemd/system/network-online.target.wants/NetworkManager-wait-online.service" \
+	"$TARGET_DIR/etc/systemd/system/network-online.target.wants/systemd-networkd-wait-online.service"
+
 # A libpulse ABI in the final rootfs means some package has silently reintroduced
 # Pulse. Fail the image build instead of shipping a half-migrated appliance.
 if find "$TARGET_DIR/usr/lib" -maxdepth 2 -type f -name 'libpulse*.so*' -print -quit 2>/dev/null | grep -q .; then
@@ -80,6 +106,14 @@ fi
 # Alert credentials are mutable appliance state and live on the persistent DATA
 # partition. Do not leave the obsolete immutable /etc token from older images.
 rm -f "$TARGET_DIR/etc/proaudio-player-alert/alerts-token"
+
+# Embed deterministic source/version identity in every test image.
+REPO_ROOT="$(CDPATH= cd -- "$BR2_EXTERNAL_PROAUDIO_PATH/.." && pwd -P)"
+sh "$REPO_ROOT/scripts/release-info.sh" "$REPO_ROOT" > "$TARGET_DIR/etc/proaudio-release"
+. "$TARGET_DIR/etc/proaudio-release"
+printf 'ProAudio Player %s [%s/%s] build %s\n' \
+	"$PROAUDIO_VERSION" "$PROAUDIO_CHANNEL" "$PROAUDIO_STATUS" "$PROAUDIO_BUILD_ID" \
+	> "$TARGET_DIR/etc/issue"
 
 # Ensure the native service is the only ProAudio control-plane daemon enabled.
 if [ -f "$TARGET_DIR/usr/lib/systemd/system/proaudio-player-native.service" ]; then
