@@ -11,8 +11,6 @@ Group=proaudio-player
 UMask=0077
 Environment=HOME=/var/lib/proaudio-player
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
-Environment=PULSE_SERVER=unix:/run/pulse/native
-Environment=PULSE_SINK=proaudio_player_music
 ExecStartPre=/bin/rm -rf /run/proaudio-player/spotifyd
 ExecStartPre=/bin/mkdir -p /run/proaudio-player/spotifyd
 ExecStart=/usr/bin/spotifyd --no-daemon --config-path /etc/proaudio-player-alert/spotifyd.conf
