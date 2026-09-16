@@ -24,7 +24,9 @@ done
 
 # Pure-PipeWire firmware has no PulseAudio compatibility runtime. PipeWire
 # remains the only audio server; ALSA compatibility PCMs route legacy media
-# engines into the native PipeWire graph.
+# engines into the native PipeWire graph. PipeWire itself installs its Pulse
+# protocol daemon/config unconditionally, so prune every compatibility artifact
+# from the appliance target after package installation.
 rm -f \
 	"$TARGET_DIR/usr/bin/pulseaudio" \
 	"$TARGET_DIR/usr/bin/pipewire-pulse" \
@@ -36,11 +38,15 @@ rm -f \
 	"$TARGET_DIR/usr/lib/systemd/system/pulseaudio.service" \
 	"$TARGET_DIR/usr/lib/systemd/system/pipewire-pulse.service" \
 	"$TARGET_DIR/usr/lib/systemd/system/pipewire-pulse.socket" \
+	"$TARGET_DIR/usr/lib/systemd/user/pipewire-pulse.service" \
+	"$TARGET_DIR/usr/lib/systemd/user/pipewire-pulse.socket" \
 	"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/pulseaudio.service" \
 	"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/pipewire-pulse.service" \
 	"$TARGET_DIR/etc/systemd/system/sockets.target.wants/pipewire-pulse.socket" \
+	"$TARGET_DIR/usr/share/pipewire/pipewire-pulse.conf" \
 	"$TARGET_DIR/usr/share/dbus-1/system.d/pulseaudio-system.conf"
 rm -rf \
+	"$TARGET_DIR/usr/share/pipewire/pipewire-pulse.conf.avail" \
 	"$TARGET_DIR/etc/pipewire/pipewire-pulse.conf.d" \
 	"$TARGET_DIR/etc/systemd/system/pipewire-pulse.service.d"
 for pulse_modules in "$TARGET_DIR"/usr/lib/pulse-*/modules; do
@@ -53,6 +59,14 @@ done
 if find "$TARGET_DIR/usr/lib" -maxdepth 2 -type f -name 'libpulse*.so*' -print -quit 2>/dev/null | grep -q .; then
 	echo "ERROR: libpulse reappeared in pure-PipeWire target rootfs" >&2
 	find "$TARGET_DIR/usr/lib" -maxdepth 2 -type f -name 'libpulse*.so*' -print >&2 || true
+	exit 1
+fi
+
+# PipeWire 1.6.x builds the Pulse protocol frontend even when libpulse support is
+# disabled. The appliance must not ship any of that compatibility surface.
+if find "$TARGET_DIR" -name 'pipewire-pulse*' -print -quit 2>/dev/null | grep -q .; then
+	echo "ERROR: pipewire-pulse compatibility artifacts remain in pure-PipeWire target rootfs" >&2
+	find "$TARGET_DIR" -name 'pipewire-pulse*' -print >&2 || true
 	exit 1
 fi
 
