@@ -9,8 +9,6 @@ Type=simple
 User=proaudio-player
 Group=proaudio-player
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
-Environment=PULSE_SERVER=unix:/run/pulse/native
-Environment=PULSE_SINK=proaudio_player_music
 ExecStart=/usr/bin/shairport-sync -c /etc/proaudio-player-alert/shairport-sync.conf
 Restart=always
 RestartSec=1
