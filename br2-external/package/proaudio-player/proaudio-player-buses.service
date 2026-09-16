@@ -1,7 +1,8 @@
 [Unit]
-Description=ProAudio Player virtual music and priority buses
-After=pipewire.service pipewire-pulse.service wireplumber.service
-Requires=pipewire.service pipewire-pulse.service wireplumber.service
+Description=ProAudio Player native PipeWire music and priority buses
+After=pipewire.service wireplumber.service
+Requires=pipewire.service wireplumber.service
+PartOf=pipewire.service
 
 [Service]
 Type=oneshot
@@ -10,7 +11,6 @@ Group=proaudio-player
 RuntimeDirectory=proaudio-player
 RuntimeDirectoryMode=0750
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
-Environment=PULSE_SERVER=unix:/run/pulse/native
 EnvironmentFile=-/etc/proaudio-player-alert/audio.env
 EnvironmentFile=-/var/lib/proaudio-player-alert/audio-output.env
 ExecStart=/usr/libexec/proaudio-player/audio-buses.sh start

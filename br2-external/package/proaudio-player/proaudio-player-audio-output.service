@@ -8,7 +8,6 @@ Type=oneshot
 User=proaudio-player
 Group=proaudio-player
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
-Environment=PULSE_SERVER=unix:/run/pulse/native
 EnvironmentFile=-/etc/proaudio-player-alert/audio.env
 EnvironmentFile=-/var/lib/proaudio-player-alert/audio-output.env
 ExecStart=/usr/libexec/proaudio-player/audio-buses.sh switch

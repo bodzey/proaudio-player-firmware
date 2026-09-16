@@ -1,15 +1,14 @@
 [Unit]
-Description=Watch physical audio outputs and recover ProAudio routing
-After=proaudio-player-buses.service pipewire.service pipewire-pulse.service wireplumber.service
-Requires=proaudio-player-buses.service pipewire.service pipewire-pulse.service wireplumber.service
-PartOf=proaudio-player-buses.service
+Description=Watch native PipeWire outputs and recover ProAudio routing
+After=proaudio-player-buses.service pipewire.service wireplumber.service
+Requires=proaudio-player-buses.service pipewire.service wireplumber.service
+PartOf=proaudio-player-buses.service pipewire.service
 
 [Service]
 Type=simple
 User=proaudio-player
 Group=proaudio-player
 Environment=XDG_RUNTIME_DIR=/run/proaudio-player
-Environment=PULSE_SERVER=unix:/run/pulse/native
 ExecStart=/usr/libexec/proaudio-player/proaudio-player-output-watch
 Restart=always
 RestartSec=1
