@@ -69,7 +69,7 @@ def test_native_prune_fragment_blocks_bcm2711_residue():
         assert disabled in prune
 
 
-def test_native_rootfs_drops_unused_systemd_and_pulseaudio_server():
+def test_native_rootfs_is_pure_pipewire_and_drops_unused_systemd_tools():
     defconfig = (CONFIGS / "proaudio_rpi4_64_native_defconfig").read_text(
         encoding="utf-8"
     )
@@ -84,11 +84,21 @@ def test_native_rootfs_drops_unused_systemd_and_pulseaudio_server():
     ):
         assert disabled in defconfig
 
-    assert 'rm -f "$TARGET_DIR/usr/bin/pulseaudio"' in post_build
+    assert "BR2_PACKAGE_PULSEAUDIO=y" not in defconfig
+    for binary in (
+        "pulseaudio",
+        "pipewire-pulse",
+        "pactl",
+        "pacat",
+        "parec",
+        "paplay",
+        "pamon",
+    ):
+        assert f'"$TARGET_DIR/usr/bin/{binary}"' in post_build
     assert '"$TARGET_DIR"/usr/lib/pulse-*/modules' in post_build
-    assert "/usr/bin/pactl" not in post_build
     assert "libpulse" in post_build
-    assert "pactl" in post_build
+    assert "pw-record" in post_build
+    assert "ERROR: libpulse reappeared" in post_build
 
 
 def test_unique_hostname_patch_uses_same_device_identity_as_setup_ssid():
