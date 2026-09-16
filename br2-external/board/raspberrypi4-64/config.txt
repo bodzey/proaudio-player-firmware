@@ -16,9 +16,10 @@ enable_tvout=0
 # there is no framebuffer, camera, codec or 3D workload in ProAudio Player.
 dtoverlay=vc4-kms-v3d,cma-64
 
-# No legacy analogue PWM audio. HDMI codec, USB DAC and future I2S/ASoC DACs
-# are provided by the kernel audio stack instead.
-dtparam=audio=off
+# Expose the Raspberry Pi onboard analogue audio device to ALSA. The native
+# player remains hardware-neutral and discovers it through PipeWire exactly like
+# USB, HDMI and future I2S outputs.
+dtparam=audio=on
 
 # Bluetooth is not part of the product. Keep PL011 available for DEV serial SSH/
 # console diagnostics; production disables UART separately.
