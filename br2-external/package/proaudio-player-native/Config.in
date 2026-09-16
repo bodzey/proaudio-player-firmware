@@ -27,9 +27,9 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 	select BR2_PACKAGE_MPD_FFMPEG
 	select BR2_PACKAGE_MPD_MPC
 	help
-	  Native Rust control plane for ProAudio Player. PipeWire is the
-	  realtime audio engine. ALSA is retained for physical hardware and
-	  for media engines that use PipeWire's ALSA compatibility PCM.
+	  Native Rust control plane for ProAudio Player. PipeWire is
+	  the realtime audio engine. ALSA is retained for physical
+	  hardware and for media engines using PipeWire's ALSA PCM.
 
 if BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 
@@ -38,8 +38,8 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY
 	default y
 	select BR2_PACKAGE_PROAUDIO_SHAIRPORT_SYNC
 	help
-	  Enable Shairport Sync with its native PipeWire backend and MPRIS
-	  support.
+	  Enable Shairport Sync with its native PipeWire backend and
+	  MPRIS support.
 
 config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA
 	bool "DLNA / UPnP renderer"
@@ -52,8 +52,8 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA
 	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_SOUPHTTPSRC
 	select BR2_PACKAGE_GST1_LIBAV
 	help
-	  Enable the GStreamer-based DLNA/UPnP renderer with native PipeWire
-	  output.
+	  Enable the GStreamer-based DLNA/UPnP renderer with native
+	  PipeWire output.
 
 config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_SPOTIFY
 	bool "Spotify Connect"
