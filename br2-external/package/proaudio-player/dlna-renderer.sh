@@ -16,6 +16,6 @@ exec /usr/bin/gmediarender \
     --interface-name="$interface" \
     --port=49494 \
     --friendly-name="ProAudio Player Internal Transport" \
-    --gstout-audiosink=pulsesink \
+    --gstout-audiopipe="pipewiresink target-object=proaudio_player_music" \
     --gstout-initial-volume-db=0.0 \
     --gstout-buffer-duration=0
