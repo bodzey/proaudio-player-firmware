@@ -5,7 +5,6 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 	depends on BR2_USE_WCHAR
 	depends on BR2_TOOLCHAIN_HAS_THREADS
 	depends on BR2_TOOLCHAIN_HAS_ATOMIC
-	depends on BR2_PACKAGE_PULSEAUDIO_HAS_ATOMIC
 	depends on !BR2_STATIC_LIBS
 	select BR2_PACKAGE_BASH
 	select BR2_PACKAGE_CA_CERTIFICATES
@@ -15,10 +14,9 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 	select BR2_PACKAGE_ALSA_UTILS_AMIXER
 	select BR2_PACKAGE_ALSA_UTILS_APLAY
 	select BR2_PACKAGE_PIPEWIRE
-	# Transitional control backend still uses libpulse while media engines are
-	# migrated off Pulse. Remove this together with libpulse-binding once the
-	# native PipeWire control backend replaces PulseControl.
-	select BR2_PACKAGE_PULSEAUDIO
+	# pw-record/pw-cat are built by Buildroot's PipeWire package when libsndfile
+	# is enabled. Native meters capture the logical buses through pw-record.
+	select BR2_PACKAGE_LIBSNDFILE
 	select BR2_PACKAGE_LUA
 	select BR2_PACKAGE_LUA_5_4
 	select BR2_PACKAGE_WIREPLUMBER
@@ -30,9 +28,8 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 	select BR2_PACKAGE_MPD_MPC
 	help
 	  Native Rust control plane for ProAudio Player. PipeWire is the
-	  realtime audio engine; ALSA is used only for hardware and for
-	  engines that need the PipeWire ALSA compatibility PCM while the
-	  Pulse control backend is being retired.
+	  realtime audio engine. ALSA is retained for physical hardware and
+	  for media engines that use PipeWire's ALSA compatibility PCM.
 
 if BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE
 
@@ -55,7 +52,7 @@ config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA
 	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_SOUPHTTPSRC
 	select BR2_PACKAGE_GST1_LIBAV
 	help
-	  Enable the GStreamer-based DLNA/UPnP renderer with PipeWire
+	  Enable the GStreamer-based DLNA/UPnP renderer with native PipeWire
 	  output.
 
 config BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_SPOTIFY
