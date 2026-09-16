@@ -1,7 +1,7 @@
 [Unit]
 Description=Spotify Connect receiver for ProAudio Player
-After=dbus.service network-online.target proaudio-player-buses.service
-Wants=dbus.service network-online.target proaudio-player-buses.service
+After=dbus.service network.target proaudio-player-buses.service
+Wants=dbus.service proaudio-player-buses.service
 ConditionPathExists=/usr/bin/spotifyd
 
 [Service]
