@@ -22,18 +22,46 @@ do
 	rm -f "$TARGET_DIR/usr/bin/$binary"
 done
 
-# PipeWire-Pulse is the only PulseAudio-compatible server in native firmware.
-# spotifyd, native and the output watcher still require libpulse and pactl, so
-# retain the client ABI/tools but remove the redundant PulseAudio daemon and its
-# loadable server modules from the final appliance rootfs.
-rm -f "$TARGET_DIR/usr/bin/pulseaudio"
+# Pure-PipeWire firmware has no PulseAudio compatibility runtime. PipeWire
+# remains the only audio server; ALSA compatibility PCMs route legacy media
+# engines into the native PipeWire graph.
+rm -f \
+	"$TARGET_DIR/usr/bin/pulseaudio" \
+	"$TARGET_DIR/usr/bin/pipewire-pulse" \
+	"$TARGET_DIR/usr/bin/pactl" \
+	"$TARGET_DIR/usr/bin/pacat" \
+	"$TARGET_DIR/usr/bin/parec" \
+	"$TARGET_DIR/usr/bin/paplay" \
+	"$TARGET_DIR/usr/bin/pamon" \
+	"$TARGET_DIR/usr/lib/systemd/system/pulseaudio.service" \
+	"$TARGET_DIR/usr/lib/systemd/system/pipewire-pulse.service" \
+	"$TARGET_DIR/usr/lib/systemd/system/pipewire-pulse.socket" \
+	"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/pulseaudio.service" \
+	"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/pipewire-pulse.service" \
+	"$TARGET_DIR/etc/systemd/system/sockets.target.wants/pipewire-pulse.socket" \
+	"$TARGET_DIR/usr/share/dbus-1/system.d/pulseaudio-system.conf"
+rm -rf \
+	"$TARGET_DIR/etc/pipewire/pipewire-pulse.conf.d" \
+	"$TARGET_DIR/etc/systemd/system/pipewire-pulse.service.d"
 for pulse_modules in "$TARGET_DIR"/usr/lib/pulse-*/modules; do
 	[ -e "$pulse_modules" ] || continue
 	rm -rf "$pulse_modules"
 done
-rm -f "$TARGET_DIR/usr/lib/systemd/system/pulseaudio.service"
-rm -f "$TARGET_DIR/etc/systemd/system/multi-user.target.wants/pulseaudio.service"
-rm -f "$TARGET_DIR/usr/share/dbus-1/system.d/pulseaudio-system.conf"
+
+# A libpulse ABI in the final rootfs means some package has silently reintroduced
+# Pulse. Fail the image build instead of shipping a half-migrated appliance.
+if find "$TARGET_DIR/usr/lib" -maxdepth 2 -type f -name 'libpulse*.so*' -print -quit 2>/dev/null | grep -q .; then
+	echo "ERROR: libpulse reappeared in pure-PipeWire target rootfs" >&2
+	find "$TARGET_DIR/usr/lib" -maxdepth 2 -type f -name 'libpulse*.so*' -print >&2 || true
+	exit 1
+fi
+
+# Native meters depend on pw-record. Buildroot enables pw-cat/pw-record when
+# libsndfile is selected; make that an explicit image invariant.
+if [ ! -x "$TARGET_DIR/usr/bin/pw-record" ]; then
+	echo "ERROR: pw-record is missing from pure-PipeWire target rootfs" >&2
+	exit 1
+fi
 
 # Alert credentials are mutable appliance state and live on the persistent DATA
 # partition. Do not leave the obsolete immutable /etc token from older images.
