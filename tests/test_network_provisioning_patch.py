@@ -62,10 +62,11 @@ def test_dev_kernel_is_native_audio_appliance_profile():
     assert "camera_auto_detect=0" in config
     assert "display_auto_detect=0" in config
     assert "max_framebuffers=0" in config
+    assert "dtparam=audio=on" in config
 
     # Runtime contract derived from proaudio-player-native: onboard Ethernet and
     # Broadcom full-MAC Wi-Fi, IPv4 multicast discovery, GPIO setup control,
-    # ext4 state/music, plus HDMI/USB/I2S audio outputs.
+    # ext4 state/music, plus onboard analogue/HDMI/USB/I2S audio outputs.
     for setting in (
         "CONFIG_GPIOLIB=y",
         "CONFIG_GPIO_CDEV=y",
@@ -77,6 +78,10 @@ def test_dev_kernel_is_native_audio_appliance_profile():
         "CONFIG_BRCMFMAC_SDIO=y",
         "CONFIG_DRM=y",
         "CONFIG_DRM_VC4=y",
+        "CONFIG_STAGING=y",
+        "CONFIG_BCM_VIDEOCORE=y",
+        "CONFIG_BCM2835_VCHIQ=y",
+        "CONFIG_SND_BCM2835=m",
         "CONFIG_SND_USB_AUDIO=y",
         "CONFIG_SND_SOC=y",
         "CONFIG_SND_SOC_HDMI_CODEC=m",
@@ -91,6 +96,7 @@ def test_dev_kernel_is_native_audio_appliance_profile():
 
     # Current native runtime has no video UI, Bluetooth, removable-drive mount
     # policy, alternate NIC/WLAN support, router stack or non-ext4 music store.
+    # STAGING/VCHIQ are retained only for Raspberry Pi onboard analogue audio.
     for symbol in (
         "CONFIG_COMPILE_TEST",
         "CONFIG_DRM_V3D",
@@ -104,8 +110,10 @@ def test_dev_kernel_is_native_audio_appliance_profile():
         "CONFIG_VIDEO_BCM2835",
         "CONFIG_VIDEO_CODEC_BCM2835",
         "CONFIG_VIDEO_ISP_BCM2835",
-        "CONFIG_BCM2835_VCHIQ",
-        "CONFIG_STAGING",
+        "CONFIG_VCHIQ_CDEV",
+        "CONFIG_R8712U",
+        "CONFIG_VT6656",
+        "CONFIG_FB_TFT",
         "CONFIG_HID",
         "CONFIG_BT",
         "CONFIG_SND_SOC_ALL_CODECS",
