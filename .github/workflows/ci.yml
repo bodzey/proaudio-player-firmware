@@ -37,6 +37,7 @@ jobs:
       - name: Run direct linters
         run: |
           status=0
+          shellcheck scripts/release-info.sh || status=$?
           shellcheck br2-external/board/raspberrypi4-64/post-image.sh || status=$?
           shellcheck br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/proaudio-player/prepare-storage || status=$?
           flake8 br2-external/package/proaudio-networkd/proaudio-networkd || status=$?
@@ -52,6 +53,12 @@ jobs:
           python -m pytest -q
           tests/test_build_tooling.py
           tests/test_storage_build_contract.py
+
+      - name: Run appliance and release contract tests
+        run: >-
+          python -m pytest -q
+          tests/test_audio_appliance_contract.py
+          tests/test_release_and_pruning.py
 
       - name: Run firmware asset and network transition tests
         run: >-
