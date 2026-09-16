@@ -80,12 +80,12 @@ def test_bootstrap_supports_major_linux_package_families_and_never_builds():
     assert "make -j" not in script
 
 
-def test_source_sync_follows_dev_but_keeps_buildroot_pinned():
+def test_source_sync_follows_configured_branches_but_keeps_buildroot_pinned():
     script = (SCRIPTS / "sync-dev-submodules.sh").read_text(encoding="utf-8")
     assert "submodule update --init --recursive upstream/buildroot" in script
     assert 'submodule update --init --remote --checkout "$path"' in script
-    assert '[[ "$branch" != dev ]]' in script
-    assert "refs/remotes/origin/dev" in script
+    assert 'config -f .gitmodules --get "submodule.${path}.branch"' in script
+    assert 'rev-parse "refs/remotes/origin/$branch"' in script
     assert "status --porcelain" in script
     assert "Buildroot submodule has local changes" in script
     assert "legacy_lock" in script
