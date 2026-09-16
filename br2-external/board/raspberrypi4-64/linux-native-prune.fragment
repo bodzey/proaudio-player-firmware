@@ -148,6 +148,11 @@ CONFIG_NLS=y
 # CONFIG_REGULATOR_RASPBERRYPI_TOUCHSCREEN_V2 is not set
 # CONFIG_REGULATOR_WAVESHARE_TOUCHSCREEN is not set
 
+# bcm2835-audio needs VCHIQ, but not the MMAL or VideoCore shared-memory layers.
+# Keep the minimal analogue-audio transport without pulling camera/video helpers.
+# CONFIG_BCM2835_VCHIQ_MMAL is not set
+# CONFIG_BCM_VC_SM_CMA is not set
+
 # The hardware-neutral native layer keeps the BCM2835 I2S controller and Linux
 # simple-card only. Concrete codec/HAT drivers belong to the final board profile.
 # CONFIG_SND_HRTIMER is not set
