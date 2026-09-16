@@ -86,12 +86,13 @@ def test_native_audio_topology_has_one_final_physical_output_path():
     ).read_text(encoding="utf-8")
 
     assert "MASTER_SINK=\"${MASTER_SINK:-proaudio_player_master}\"" in buses
-    assert 'load_loopback_into music_loop "$MUSIC_SINK" "$MASTER_SINK"' in buses
-    assert 'load_loopback_into alert_loop "$ALERT_SINK" "$MASTER_SINK"' in buses
-    assert 'load_loopback_into output_loop "$MASTER_SINK" "$output_target"' in buses
+    assert 'link_stereo "$MUSIC_SINK" "$MASTER_SINK"' in buses
+    assert 'link_stereo "$ALERT_SINK" "$MASTER_SINK"' in buses
+    assert 'link_stereo "$MASTER_SINK" "$output_target"' in buses
     assert 'PARKING_SINK="${PARKING_SINK:-proaudio_player_parking}"' in buses
-    assert 'GRAPH_UNITY_DB="0.0"' in buses
-    assert "proaudio-player-final-output" in buses
+    assert "GRAPH_BACKEND=pipewire" in buses
+    assert "pw-link" in buses
+    assert "pactl" not in buses
 
     # Generic AUTO selection must not privilege a hardware bus such as USB.
     assert "alsa_output\\.usb" not in buses
@@ -111,7 +112,8 @@ def test_native_audio_keeps_physical_gain_at_unity_and_never_unmutes_during_prob
 
     assert 'OUTPUT_VOLUME_PERCENT="${OUTPUT_VOLUME_PERCENT:-100}"' in buses
     assert '[[ "$OUTPUT_VOLUME_PERCENT" != "100" ]]' in buses
-    assert 'pactl set-sink-volume "$physical" 100%' in buses
+    assert 'wpctl set-volume "$id" 1.0' in buses
+    assert "pactl" not in buses
     assert "OUTPUT_VOLUME_PERCENT=100" in audio_env
 
     # Multi-channel hardware controls are explicitly re-applied, but the ALSA

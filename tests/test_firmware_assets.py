@@ -65,7 +65,8 @@ def test_spotifyd_uses_verified_buildroot_cargo_source():
     assert "https://static.crates.io/crates/spotifyd" in makefile
     assert "PROAUDIO_SPOTIFYD_DL_SUBDIR = spotifyd" in makefile
     assert "$(eval $(cargo-package))" in makefile
-    assert "--no-default-features --features pulseaudio_backend" in makefile
+    assert "--no-default-features --features alsa_backend,dbus_mpris" in makefile
+    assert "pulseaudio_backend" not in makefile
     assert "PROAUDIO_SPOTIFYD_EXTRACT_CMDS" in makefile
 
 
