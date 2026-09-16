@@ -16,13 +16,14 @@ PROAUDIO_SHAIRPORT_SYNC_DEPENDENCIES = \
 	libconfig \
 	libglib2 \
 	openssl \
-	popt \
-	pulseaudio
+	pipewire \
+	popt
 PROAUDIO_SHAIRPORT_SYNC_AUTORECONF = YES
 
 PROAUDIO_SHAIRPORT_SYNC_CONF_OPTS = \
 	--without-alsa \
-	--with-pa \
+	--without-pa \
+	--with-pw \
 	--with-avahi \
 	--without-tinysvcmdns \
 	--with-ssl=openssl \
