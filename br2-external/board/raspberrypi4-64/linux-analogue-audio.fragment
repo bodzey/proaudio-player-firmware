@@ -1,0 +1,21 @@
+# Raspberry Pi 4 built-in analogue (3.5 mm PWM) audio support.
+#
+# The legacy bcm2835 audio driver still lives under drivers/staging in the
+# Raspberry Pi kernel and requires the VideoCore/VCHIQ transport. Keep only the
+# kernel-side transport needed by snd_bcm2835; userspace VCHIQ and camera/video
+# services remain disabled by the primary/prune fragments.
+CONFIG_STAGING=y
+CONFIG_BCM_VIDEOCORE=y
+CONFIG_BCM2835_VCHIQ=y
+# CONFIG_VCHIQ_CDEV is not set
+
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_PCM=y
+CONFIG_SND_BCM2835=y
+
+# Do not re-enable the legacy camera/video stack together with VCHIQ.
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_VIDEO_BCM2835 is not set
+# CONFIG_VIDEO_CODEC_BCM2835 is not set
+# CONFIG_VIDEO_ISP_BCM2835 is not set

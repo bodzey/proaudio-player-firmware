@@ -7,26 +7,52 @@ CONFIGS = ROOT / "br2-external/configs"
 NETWORK = ROOT / "br2-external/package/proaudio-networkd"
 
 
-def test_dev_kernel_is_audio_only_but_keeps_hdmi_audio():
+def test_dev_kernel_is_audio_only_and_keeps_all_supported_outputs():
     fragment = (BOARD / "linux-headless-usb.fragment").read_text(encoding="utf-8")
+    analogue = (BOARD / "linux-analogue-audio.fragment").read_text(encoding="utf-8")
     config = (BOARD / "config.txt").read_text(encoding="utf-8")
     cmdline = (BOARD / "cmdline.txt").read_text(encoding="utf-8")
+    defconfig = (CONFIGS / "proaudio_rpi4_64_native_defconfig").read_text(
+        encoding="utf-8"
+    )
 
     assert "CONFIG_DRM_VC4=y" in fragment
     assert "CONFIG_SND_SOC_HDMI_CODEC=m" in fragment
+    assert "CONFIG_SND_USB_AUDIO=y" in fragment
     for disabled in (
         "# CONFIG_DRM_V3D is not set",
         "# CONFIG_FB is not set",
         "# CONFIG_FRAMEBUFFER_CONSOLE is not set",
         "# CONFIG_VT is not set",
         "# CONFIG_MEDIA_SUPPORT is not set",
-        "# CONFIG_SND_BCM2835 is not set",
     ):
         assert disabled in fragment
+
+    for required in (
+        "CONFIG_STAGING=y",
+        "CONFIG_BCM_VIDEOCORE=y",
+        "CONFIG_BCM2835_VCHIQ=y",
+        "# CONFIG_VCHIQ_CDEV is not set",
+        "CONFIG_SND_BCM2835=y",
+    ):
+        assert required in analogue
+    for disabled in (
+        "# CONFIG_MEDIA_SUPPORT is not set",
+        "# CONFIG_VIDEO_BCM2835 is not set",
+        "# CONFIG_VIDEO_CODEC_BCM2835 is not set",
+        "# CONFIG_VIDEO_ISP_BCM2835 is not set",
+    ):
+        assert disabled in analogue
+
+    assert "linux-analogue-audio.fragment" in defconfig
+    assert defconfig.index("linux-native-prune.fragment") < defconfig.index(
+        "linux-analogue-audio.fragment"
+    )
     assert "camera_auto_detect=0" in config
     assert "display_auto_detect=0" in config
     assert "max_framebuffers=0" in config
-    assert "dtparam=audio=off" in config
+    assert "dtparam=audio=on" in config
+    assert "snd_bcm2835.enable_headphones=1" in cmdline
     assert "console=tty1" not in cmdline
     assert "console=ttyAMA0,115200" in cmdline
 
