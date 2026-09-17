@@ -14,6 +14,8 @@ def test_qemu_profile_runs_current_native_and_webui_stack():
     assert "BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE=y" in config
     assert "BR2_PACKAGE_PROAUDIO_WEBUI=y" in config
     assert "# BR2_PACKAGE_PROAUDIO_NETWORKD is not set" in config
+    assert "BR2_TOOLCHAIN_BUILDROOT_CXX=y" in config
+    assert "BR2_INSTALL_LIBSTDCPP=y" not in config
     assert "board/common/rootfs-overlay" in config
     assert "board/qemu-aarch64/rootfs-overlay" in config
     assert "board/common/post-build-native.sh" in config
