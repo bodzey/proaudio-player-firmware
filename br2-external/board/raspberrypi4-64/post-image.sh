@@ -5,6 +5,7 @@ BOARD_DIR="$(dirname "$0")"
 GENIMAGE_CFG="${BINARIES_DIR}/genimage-proaudio.cfg"
 DATA_IMAGE="${BINARIES_DIR}/data.ext4"
 DATA_IMAGE_SIZE_MIB=64
+REPO_ROOT="$(cd "${BR2_EXTERNAL_PROAUDIO_PATH}/.." && pwd -P)"
 
 FILES=()
 for file in "${BINARIES_DIR}"/*.dtb "${BINARIES_DIR}"/rpi-firmware/*; do
@@ -31,3 +32,16 @@ dd if=/dev/zero of="${DATA_IMAGE}" bs=1M count=0 seek="${DATA_IMAGE_SIZE_MIB}" s
 
 "${BR2_EXTERNAL_PROAUDIO_PATH}/../upstream/buildroot/support/scripts/genimage.sh" \
 	-c "${GENIMAGE_CFG}"
+
+# Preserve sdcard.img as the stable entry point while also producing a
+# self-describing immutable production artifact for field diagnostics.
+RELEASE_FILE="${BINARIES_DIR}/proaudio-release"
+sh "${REPO_ROOT}/scripts/release-info.sh" "${REPO_ROOT}" > "${RELEASE_FILE}"
+PROAUDIO_VERSION="$(sed -n 's/^PROAUDIO_VERSION=//p' "${RELEASE_FILE}")"
+PROAUDIO_CHANNEL="$(sed -n 's/^PROAUDIO_CHANNEL=//p' "${RELEASE_FILE}")"
+PROAUDIO_STATUS="$(sed -n 's/^PROAUDIO_STATUS=//p' "${RELEASE_FILE}")"
+PROAUDIO_FIRMWARE_SHA="$(sed -n 's/^PROAUDIO_FIRMWARE_SHA=//p' "${RELEASE_FILE}")"
+ARTIFACT_NAME="proaudio-player-rpi4-${PROAUDIO_VERSION}-${PROAUDIO_CHANNEL}-${PROAUDIO_STATUS}-fw${PROAUDIO_FIRMWARE_SHA}.img"
+mv "${BINARIES_DIR}/sdcard.img" "${BINARIES_DIR}/${ARTIFACT_NAME}"
+ln -s "${ARTIFACT_NAME}" "${BINARIES_DIR}/sdcard.img"
+printf '%s\n' "${ARTIFACT_NAME}" > "${BINARIES_DIR}/proaudio-image-name"
