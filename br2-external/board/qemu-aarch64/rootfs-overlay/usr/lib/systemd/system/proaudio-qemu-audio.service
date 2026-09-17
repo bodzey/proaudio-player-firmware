@@ -1,0 +1,20 @@
+[Unit]
+Description=ProAudio Player QEMU virtual audio output
+After=pipewire-pulse.service
+Requires=pipewire-pulse.service
+Before=proaudio-player-buses.service
+
+[Service]
+Type=oneshot
+User=proaudio-player
+Group=proaudio-player
+RuntimeDirectory=proaudio-qemu
+RuntimeDirectoryMode=0750
+Environment=XDG_RUNTIME_DIR=/run/proaudio-qemu
+Environment=PULSE_SERVER=unix:/run/pulse/native
+ExecStart=/usr/libexec/proaudio-player/qemu-virtual-audio start
+ExecStop=/usr/libexec/proaudio-player/qemu-virtual-audio stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

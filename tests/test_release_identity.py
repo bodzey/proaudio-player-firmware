@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BOARD = ROOT / "br2-external/board/raspberrypi4-64"
+COMMON_BOARD = ROOT / "br2-external/board/common"
 
 
 def test_dev_release_identity_is_explicit_and_semantic():
@@ -31,11 +32,13 @@ def test_release_helper_tracks_all_source_revisions_and_cleanliness():
 
 
 def test_native_image_embeds_release_identity_and_version_command():
-    post_build = (BOARD / "post-build-native.sh").read_text(encoding="utf-8")
+    post_build = (COMMON_BOARD / "post-build-native.sh").read_text(encoding="utf-8")
+    wrapper = (BOARD / "post-build-native.sh").read_text(encoding="utf-8")
     assert 'RELEASE_FILE="$TARGET_DIR/etc/proaudio-release"' in post_build
     assert 'scripts/release-info.sh" "$REPO_ROOT" > "$RELEASE_FILE"' in post_build
     assert '"$TARGET_DIR/usr/bin/proaudio-version"' in post_build
     assert '"$TARGET_DIR/etc/issue"' in post_build
+    assert "board/common/post-build-native.sh" in wrapper
 
     # Versioning must not alter the known-good Pulse compatibility baseline.
     assert "PipeWire-Pulse is the only PulseAudio-compatible server" in post_build

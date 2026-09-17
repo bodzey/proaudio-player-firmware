@@ -36,6 +36,8 @@ Options:
   -h, --help                          Show this help.
 
 The default build is incremental. --clean is never implied.
+The qemu-aarch64 profile uses $HOME/build/proaudio-qemu by default so it never
+reconfigures or contaminates the Raspberry Pi output tree.
 EOF
 }
 
@@ -73,6 +75,11 @@ case "$PROFILE" in
     qemu-aarch64) defconfig=proaudio_qemu_aarch64_defconfig ;;
     *) printf 'Unknown profile: %s\n' "$PROFILE" >&2; exit 2 ;;
 esac
+
+if [[ -z "$OUTPUT_DIR" && "$PROFILE" == "qemu-aarch64" ]]; then
+    : "${HOME:?HOME must be set for the default QEMU output directory}"
+    OUTPUT_DIR="${PROAUDIO_QEMU_OUTPUT:-$HOME/build/proaudio-qemu}"
+fi
 
 if ((CLEAN && ${#rebuild_components[@]})); then
     echo "--clean and --rebuild cannot be used together." >&2
@@ -141,7 +148,7 @@ if ((!CLEAN && had_existing_config)); then
     previous_network="$(sed -n 's/^network=//p' "$state_file" 2>/dev/null || true)"
 
     # An existing output without our state file predates this wrapper. Rebuild
-    # the two local-source packages once to establish a trustworthy baseline.
+    # the local-source packages once to establish a trustworthy baseline.
     if [[ -n "$native_revision" && ( -z "$previous_native" || "$previous_native" != "$native_revision" ) ]]; then
         append_rebuild_component native
     fi

@@ -1,0 +1,54 @@
+#!/bin/sh
+set -eu
+
+STATE_DIR=/run/proaudio-qemu
+STATE_FILE="$STATE_DIR/audio-module"
+SINK_NAME=qemu_virtual_dac
+
+wait_for_pulse() {
+	attempt=0
+	while ! pactl info >/dev/null 2>&1; do
+		attempt=$((attempt + 1))
+		if [ "$attempt" -ge 10 ]; then
+			printf 'PipeWire-Pulse did not become ready for QEMU virtual audio\n' >&2
+			return 1
+		fi
+		sleep 1
+	done
+}
+
+start_sink() {
+	mkdir -p "$STATE_DIR"
+	if pactl get-sink-volume "$SINK_NAME" >/dev/null 2>&1; then
+		return 0
+	fi
+	wait_for_pulse
+	module_id="$(pactl load-module module-null-sink \
+		sink_name="$SINK_NAME" \
+		sink_properties=device.description=ProAudio_QEMU_Virtual_DAC \
+		rate=48000 channels=2)"
+	case "$module_id" in
+		''|*[!0-9]*)
+			printf 'Invalid module id returned for QEMU virtual audio: %s\n' "$module_id" >&2
+			return 1
+			;;
+	esac
+	printf '%s\n' "$module_id" > "$STATE_FILE"
+}
+
+stop_sink() {
+	if [ -r "$STATE_FILE" ]; then
+		module_id="$(cat "$STATE_FILE")"
+		case "$module_id" in
+			''|*[!0-9]*) ;;
+			*) pactl unload-module "$module_id" >/dev/null 2>&1 || true ;;
+		esac
+		rm -f "$STATE_FILE"
+	fi
+}
+
+case "${1:-}" in
+	start) start_sink ;;
+	stop) stop_sink ;;
+	*) printf 'usage: qemu-virtual-audio {start|stop}\n' >&2; exit 2 ;;
+esac

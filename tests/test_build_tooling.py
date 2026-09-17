@@ -13,6 +13,7 @@ BUILD_SCRIPTS = (
     SCRIPTS / "bootstrap-build-host.sh",
     SCRIPTS / "build.sh",
     SCRIPTS / "build-container.sh",
+    SCRIPTS / "run-qemu.sh",
     SCRIPTS / "sync-dev-submodules.sh",
 )
 
@@ -56,6 +57,13 @@ def test_incremental_build_requires_explicit_cleanup_and_pinned_submodules():
     assert "HEAD:br2-external/package/proaudio-webui" in script
     assert "HEAD:br2-external/package/proaudio-networkd" in script
     assert 'mv -f "$state_tmp" "$state_file"' in script
+
+
+def test_qemu_profile_uses_a_separate_default_output_tree():
+    script = (SCRIPTS / "build.sh").read_text(encoding="utf-8")
+    assert '"$PROFILE" == "qemu-aarch64"' in script
+    assert "PROAUDIO_QEMU_OUTPUT" in script
+    assert "$HOME/build/proaudio-qemu" in script
 
 
 def test_host_check_defers_authoritative_requirements_to_buildroot():

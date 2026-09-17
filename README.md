@@ -2,7 +2,7 @@
 
 Buildroot firmware integration for ProAudio Player.
 
-The production hardware target of this repository is currently Raspberry Pi 4 Model B (BCM2711, AArch64). QEMU AArch64 is retained only as an integration smoke-test target.
+The production hardware target of this repository is currently Raspberry Pi 4 Model B (BCM2711, AArch64). QEMU AArch64 is the software-integration target for running the same pinned native/WebUI stack without reflashing physical hardware.
 
 ## Repository model
 
@@ -139,9 +139,10 @@ cd proaudio-player-firmware
 ```
 
 Run the bootstrap without `-y` if package-manager confirmation is desired.
-Add `--with-qemu` only on a development host that needs the optional QEMU
-smoke test. The script may ask for `sudo`; the build itself must be run as a
-regular user.
+Add `--with-qemu` only on a development host that needs a system QEMU fallback;
+the QEMU profile also builds a host `qemu-system-aarch64` binary inside its
+isolated Buildroot output. The script may ask for `sudo`; the build itself must
+be run as a regular user.
 
 For an unsupported Linux distribution, or when modifying the host is
 undesirable, use the controlled Debian container (Docker or Podman):
@@ -236,15 +237,80 @@ grep -E 'CONFIG_(DRM|FB|VT|INPUT|HID|USB_HID|SND_USB_AUDIO|SND_BCM2835|USB_SERIA
 
 Expected functional state includes USB storage, USB audio, analogue Pi audio, Broadcom Wi-Fi and GPIO character-device support. Display/input and unwanted USB classes should remain disabled.
 
-## QEMU smoke test
+## QEMU AArch64 integration target
 
-QEMU is not the production hardware target:
+QEMU runs the same pinned `proaudio-player-native` and `proaudio-player-webui`
+revisions as the Raspberry Pi development firmware. The target deliberately
+excludes Raspberry Pi provisioning/GPIO policy and injects one QEMU-only
+`qemu_virtual_dac` null sink outside the native core. That gives the normal
+`MUSIC -> MASTER -> physical output` routing code a deterministic output to
+exercise without pretending to emulate Raspberry Pi audio hardware.
+
+The QEMU profile uses a separate output tree by default:
+
+```text
+$HOME/build/proaudio-qemu
+```
+
+Build and start it with:
 
 ```bash
-./scripts/bootstrap-build-host.sh --with-qemu
-./scripts/build.sh --profile qemu-aarch64
+./scripts/build.sh --profile qemu-aarch64 --no-submodules
 ./scripts/run-qemu.sh
 ```
+
+The first QEMU build is independent from the Raspberry Pi output and therefore
+builds its own kernel/rootfs/tooling. Later builds are incremental. The launcher
+uses the Buildroot-built `qemu-system-aarch64` when available and otherwise
+falls back to the host binary.
+
+Default launcher behaviour:
+
+- AArch64 `virt` machine with Cortex-A53 CPU, 2 vCPUs and 1 GiB RAM;
+- rootfs changes are discarded on exit (`QEMU_SNAPSHOT=1`) so the built image
+  remains clean;
+- QEMU user networking forwards guest port 8080 to
+  `http://127.0.0.1:18080/`;
+- `qemu_virtual_dac` is created through PipeWire-Pulse before the normal bus
+  graph starts;
+- the serial console is attached to the terminal; `Ctrl-A X` exits QEMU.
+
+Useful overrides:
+
+```bash
+QEMU_WEB_PORT=18081 ./scripts/run-qemu.sh
+QEMU_SNAPSHOT=0 ./scripts/run-qemu.sh
+QEMU_MEMORY_MB=2048 QEMU_SMP=4 ./scripts/run-qemu.sh
+```
+
+User-mode QEMU networking is suitable for WebUI/API, mixer, alert, MPD, bus and
+service integration tests, but it does not reproduce LAN multicast discovery.
+For AirPlay/Spotify/DLNA discovery testing, attach the VM to an already prepared
+host TAP interface:
+
+```bash
+QEMU_NET_MODE=tap QEMU_TAP_IF=tap0 ./scripts/run-qemu.sh
+```
+
+TAP/bridge creation remains a host-administration task and is intentionally not
+performed by the unprivileged firmware scripts.
+
+Inside the VM, useful checks are:
+
+```bash
+proaudio-version
+systemctl --failed --no-pager
+pactl list short sinks
+pactl list short sink-inputs
+```
+
+The expected physical test sink is `qemu_virtual_dac`; the normal logical sinks
+remain `proaudio_player_music`, `proaudio_player_alert`,
+`proaudio_player_master` and `proaudio_player_parking`.
+
+QEMU validates software integration. Raspberry Pi-specific PWM/HDMI/I2S/USB
+hardware, device-tree policy, real hotplug timing and abrupt SD-card power-loss
+behaviour still require physical hardware validation.
 
 ## Player source integration
 
