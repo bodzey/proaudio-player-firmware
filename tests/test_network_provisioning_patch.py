@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "br2-external/package/proaudio-networkd"
 NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
 BOARD = ROOT / "br2-external/board/raspberrypi4-64"
+COMMON_POST_BUILD = ROOT / "br2-external/board/common/post-build-native.sh"
 
 
 def test_network_patches_apply_in_build_order(tmp_path):
@@ -169,10 +170,12 @@ def test_storage_does_not_seed_an_invalid_empty_mpd_database():
 
 
 def test_native_image_removes_unused_pulseaudio_system_policy_and_legacy_token():
-    post_build = (BOARD / "post-build-native.sh").read_text(encoding="utf-8")
+    post_build = COMMON_POST_BUILD.read_text(encoding="utf-8")
+    board_entry = (BOARD / "post-build-native.sh").read_text(encoding="utf-8")
     makefile = (NATIVE_PACKAGE / "proaudio-player-native.mk").read_text(
         encoding="utf-8"
     )
     assert "pulseaudio-system.conf" in post_build
     assert 'rm -f "$TARGET_DIR/etc/proaudio-player-alert/alerts-token"' in post_build
     assert "/etc/proaudio-player-alert/alerts-token" not in makefile
+    assert "board/common/post-build-native.sh" in board_entry
