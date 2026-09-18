@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "br2-external/package/proaudio-player"
 SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
 NETWORK_PACKAGE = ROOT / "br2-external/package/proaudio-networkd"
+COMMON_OVERLAY = ROOT / "br2-external/board/common/rootfs-overlay"
 
 
 def test_native_submodule_uses_protocol_relative_repository_url():
@@ -85,14 +86,14 @@ def test_unplugged_ethernet_does_not_degrade_boot():
 
 
 def test_avahi_is_the_only_mdns_responder():
-    resolved = (NETWORK_PACKAGE / "10-proaudio-resolved.conf").read_text(
-        encoding="utf-8"
-    )
+    resolved = (
+        COMMON_OVERLAY / "etc/systemd/resolved.conf.d/10-proaudio.conf"
+    ).read_text(encoding="utf-8")
     makefile = (NETWORK_PACKAGE / "proaudio-networkd.mk").read_text(
         encoding="utf-8"
     )
     assert "[Resolve]\nMulticastDNS=no\nLLMNR=no" in resolved
-    assert "resolved.conf.d/10-proaudio.conf" in makefile
+    assert "10-proaudio-resolved.conf" not in makefile
 
 
 def test_wifi_regdomain_is_early_and_initial_portal_avoids_duplicate_scan():
