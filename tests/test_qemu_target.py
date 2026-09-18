@@ -21,6 +21,46 @@ def test_qemu_profile_runs_current_native_and_webui_stack():
     assert "board/common/post-build-native.sh" in config
 
 
+def test_qemu_inherits_common_runtime_and_mdns_policy():
+    resolved = (
+        ROOT
+        / "br2-external/board/common/rootfs-overlay"
+        / "etc/systemd/resolved.conf.d/10-proaudio.conf"
+    ).read_text(encoding="utf-8")
+    tmpfiles = (
+        ROOT
+        / "br2-external/package/proaudio-player"
+        / "proaudio-player.tmpfiles.conf"
+    ).read_text(encoding="utf-8")
+    networkd_makefile = (
+        ROOT
+        / "br2-external/package/proaudio-networkd"
+        / "proaudio-networkd.mk"
+    ).read_text(encoding="utf-8")
+
+    assert "MulticastDNS=no" in resolved
+    assert "LLMNR=no" in resolved
+    assert "10-proaudio-resolved.conf" not in networkd_makefile
+
+    assert (
+        "d /var/lib/proaudio-player-alert/mpd "
+        "0750 proaudio-player proaudio-player -"
+        in tmpfiles
+    )
+    assert (
+        "d /var/lib/proaudio-player-alert/mpd/playlists "
+        "0750 proaudio-player proaudio-player -"
+        in tmpfiles
+    )
+    assert (
+        "d /srv/music 0755 proaudio-player proaudio-player -"
+        in tmpfiles
+    )
+
+    # MPD creates its own binary database. An empty placeholder is invalid.
+    assert "/var/lib/proaudio-player-alert/mpd/database" not in tmpfiles
+
+
 def test_qemu_virtual_output_is_external_to_native_core():
     helper = (
         QEMU_BOARD

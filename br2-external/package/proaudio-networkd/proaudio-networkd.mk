@@ -39,8 +39,6 @@ define PROAUDIO_NETWORKD_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/NetworkManager/conf.d/10-proaudio.conf
 	$(INSTALL) -D -m 0644 $(@D)/10-proaudio-ethernet.network \
 		$(TARGET_DIR)/etc/systemd/network/10-proaudio-ethernet.network
-	$(INSTALL) -D -m 0644 $(@D)/10-proaudio-resolved.conf \
-		$(TARGET_DIR)/etc/systemd/resolved.conf.d/10-proaudio.conf
 endef
 
 define PROAUDIO_NETWORKD_INSTALL_INIT_SYSTEMD
