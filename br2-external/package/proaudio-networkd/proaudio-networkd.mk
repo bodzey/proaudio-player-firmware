@@ -11,7 +11,7 @@ PROAUDIO_NETWORKD_DEPENDENCIES = \
 	brcmfmac_sdio-firmware-rpi \
 	dnsmasq \
 	iw \
-	libgpiod \
+	libgpiod2 \
 	network-manager \
 	wireless-regdb \
 	wpa_supplicant
