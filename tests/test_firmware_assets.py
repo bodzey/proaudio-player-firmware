@@ -302,3 +302,16 @@ def test_rpi4_post_image_refreshes_external_boot_policy_every_build():
     assert cmdline_copy in post_image
     assert post_image.index(config_copy) < post_image.index("FILES=()")
     assert post_image.index(cmdline_copy) < post_image.index("FILES=()")
+
+
+def test_firmware_contains_no_linkplay_or_4stream_markers():
+    forbidden = ("linkplay", "4stream", "httpapi.asp", "_linkplay._tcp")
+    for path in (ROOT / "br2-external").rglob("*"):
+        if not path.is_file():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8").lower()
+        except UnicodeDecodeError:
+            continue
+        for marker in forbidden:
+            assert marker not in content, f"{marker} leaked into {path.relative_to(ROOT)}"
