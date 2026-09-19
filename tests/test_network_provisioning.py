@@ -12,6 +12,7 @@ def test_networkd_is_a_rust_runtime_without_python_dependencies():
     config = (PACKAGE / "Config.in").read_text(encoding="utf-8")
     makefile = (PACKAGE / "proaudio-networkd.mk").read_text(encoding="utf-8")
     service = (PACKAGE / "proaudio-networkd.service").read_text(encoding="utf-8")
+    runtime_config = (PACKAGE / "proaudio-networkd.conf").read_text(encoding="utf-8")
     cargo = (PACKAGE / "rust/Cargo.toml").read_text(encoding="utf-8")
     root_config = (ROOT / "br2-external/Config.in").read_text(encoding="utf-8")
 
@@ -26,6 +27,8 @@ def test_networkd_is_a_rust_runtime_without_python_dependencies():
     assert 'rust-version = "1.88"' in cargo
     assert "PYTHONUNBUFFERED" not in service
     assert "NoNewPrivileges=yes" in service
+    assert "SETUP_PASSWORD=proaudio-setup" in runtime_config
+    assert "SETUP_PASSWORD=\n" not in runtime_config
 
     assert not (PACKAGE / "proaudio-networkd").exists()
     assert not list(PACKAGE.glob("*.patch"))
