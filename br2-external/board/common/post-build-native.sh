@@ -4,7 +4,7 @@ set -eu
 TARGET_DIR="$1"
 
 # Native firmware must not accidentally start stale Python control-plane units
-# when reusing an output directory created by the regular/4STREAM dev firmware.
+# when reusing an output directory created by an older legacy firmware profile.
 for unit in \
 	proaudio-player-alert.service \
 	proaudio-player-webui.service \
