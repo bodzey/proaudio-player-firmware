@@ -31,7 +31,7 @@ PROAUDIO_SHAIRPORT_SYNC_CONF_OPTS = \
 	--with-stdout \
 	--without-airplay-2 \
 	--without-convolution \
-	--without-dbus-interface \
+	--with-dbus-interface \
 	--with-mpris-interface \
 	--without-libdaemon \
 	--without-soxr \
