@@ -55,10 +55,12 @@ def test_dev_kernel_is_audio_only_and_keeps_all_supported_outputs():
     assert "disable_fw_kms_setup=1" in config
     assert "dtparam=audio=on" in config
     assert "audio_pwm_mode=2" in config
-    assert "dtparam=watchdog=on" in config
+    assert "kernel_watchdog_timeout=30" in config
+    assert "dtparam=watchdog=on" not in config
+    assert "noaudio" not in config
     assert "snd_bcm2835.enable_headphones=1" in cmdline
     assert "snd_bcm2835.enable_hdmi=0" in cmdline
-    assert "rootflags=noatime" in cmdline
+    assert "rootflags=noatime,errors=remount-ro" in cmdline
     assert "panic=10" in cmdline
     assert "console=tty1" not in cmdline
     assert "console=ttyAMA0,115200" in cmdline

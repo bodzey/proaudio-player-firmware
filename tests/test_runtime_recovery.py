@@ -67,7 +67,8 @@ def test_rpi4_runtime_uses_hardware_watchdog_and_volatile_journal():
         encoding="utf-8"
     )
 
-    assert "RuntimeWatchdogSec=10s" in watchdog
+    assert "RuntimeWatchdogSec=20s" in watchdog
+    assert "RebootWatchdogSec=2min" in watchdog
     assert "Storage=volatile" in journal
     assert "RuntimeMaxUse=16M" in journal
     assert "RuntimeMaxFileSize=4M" in journal
