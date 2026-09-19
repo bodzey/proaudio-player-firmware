@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
-PLAYER_PACKAGE = ROOT / "br2-external/package/proaudio-player"
+RUNTIME_PACKAGE = NATIVE_PACKAGE / "runtime"
 WEBUI_PACKAGE = ROOT / "br2-external/package/proaudio-webui"
 NATIVE_DEFCONFIG = ROOT / "br2-external/configs/proaudio_rpi4_64_native_defconfig"
 
@@ -71,7 +71,7 @@ def test_native_audio_runtime_packages_unity_graph_and_generic_configs():
     assert "$(@D)/config/spotifyd.conf" in native_makefile
 
     output_watch_service = (
-        PLAYER_PACKAGE / "proaudio-player-output-watch.service"
+        RUNTIME_PACKAGE / "proaudio-player-output-watch.service"
     ).read_text(encoding="utf-8")
     assert "proaudio-player-output-watch" in output_watch_service
     assert "Restart=always" in output_watch_service
@@ -82,7 +82,7 @@ def test_airplay_package_exposes_native_and_mpris_dbus_interfaces():
         ROOT
         / "br2-external/package/proaudio-shairport-sync/proaudio-shairport-sync.mk"
     ).read_text(encoding="utf-8")
-    dbus_policy = (PLAYER_PACKAGE / "proaudio-player-mpris.conf").read_text(
+    dbus_policy = (RUNTIME_PACKAGE / "proaudio-player-mpris.conf").read_text(
         encoding="utf-8"
     )
 
@@ -173,8 +173,8 @@ def test_persistent_state_and_spotify_receiver_are_runtime_safe():
         / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
         "proaudio-player/prepare-storage"
     ).read_text(encoding="utf-8")
-    tmpfiles = (PLAYER_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
-    spotify_service = (PLAYER_PACKAGE / "proaudio-player-spotifyd.service").read_text(
+    tmpfiles = (RUNTIME_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
+    spotify_service = (RUNTIME_PACKAGE / "proaudio-player-spotifyd.service").read_text(
         encoding="utf-8"
     )
     spotify_config = (
@@ -211,12 +211,11 @@ def test_persistent_state_and_spotify_receiver_are_runtime_safe():
 
 
 def test_dlna_worker_uses_a_private_non_loopback_interface():
-    renderer = (PLAYER_PACKAGE / "dlna-renderer.sh").read_text(encoding="utf-8")
-    service = (PLAYER_PACKAGE / "proaudio-player-dlna.service").read_text(
+    renderer = (RUNTIME_PACKAGE / "dlna-renderer.sh").read_text(encoding="utf-8")
+    service = (RUNTIME_PACKAGE / "proaudio-player-dlna.service").read_text(
         encoding="utf-8"
     )
     native_config = (NATIVE_PACKAGE / "Config.in").read_text(encoding="utf-8")
-    legacy_config = (PLAYER_PACKAGE / "Config.in").read_text(encoding="utf-8")
     kernel_fragment = (
         ROOT / "br2-external/board/raspberrypi4-64/linux-headless-usb.fragment"
     ).read_text(encoding="utf-8")
@@ -231,6 +230,5 @@ def test_dlna_worker_uses_a_private_non_loopback_interface():
     assert "/sbin/ip link add proaudio-dlna type dummy" in service
     assert "/sbin/ip addr replace 169.254.253.1/32 dev proaudio-dlna" in service
     assert "select BR2_PACKAGE_IPROUTE2" in native_config
-    assert "select BR2_PACKAGE_IPROUTE2" in legacy_config
     assert "CONFIG_DUMMY=y" in kernel_fragment
     assert "http://169.254.253.1:49494/upnp/control/rendertransport1" in native_dlna
