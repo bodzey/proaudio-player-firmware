@@ -12,22 +12,22 @@ camera_auto_detect=0
 max_framebuffers=0
 enable_tvout=0
 
-# HDMI audio is provided by VC4/KMS. Let Linux KMS own EDID/mode discovery
-# instead of injecting a firmware-selected video= mode into the kernel command
-# line. No framebuffer console, VT or V3D userspace stack is built.
+# HDMI audio is provided by VC4/KMS. Linux owns EDID/mode discovery; no local
+# framebuffer console, virtual terminal or V3D userspace stack is built.
 dtoverlay=vc4-kms-v3d,cma-64
 disable_fw_kms_setup=1
 
-# Keep the Raspberry Pi 4 built-in 3.5 mm PWM output available and explicitly
-# use the high-quality PWM mode. The legacy bcm2835 HDMI path is disabled on
-# the kernel command line so HDMI audio has one owner: VC4/KMS.
+# Keep the Raspberry Pi 4 built-in 3.5 mm PWM output available in high-quality
+# mode. Legacy snd_bcm2835 is restricted to headphones by cmdline.txt, while
+# HDMI audio remains owned by VC4/KMS.
 dtparam=audio=on
 audio_pwm_mode=2
 
-# Arm the BCM2835 hardware watchdog; systemd services it at runtime.
-dtparam=watchdog=on
+# Hand the BCM2835 hardware watchdog to Linux during boot. systemd services it
+# continuously after PID 1 starts.
+kernel_watchdog_timeout=30
 
-# Bluetooth is not part of the product. PL011 remains available for DEV/recovery
-# serial diagnostics on the current rpi4-native profile.
+# Bluetooth is not part of the product. PL011 remains available in the current
+# DEV/recovery profile for serial diagnostics.
 dtoverlay=disable-bt
 enable_uart=1
