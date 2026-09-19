@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAYER_PACKAGE = ROOT / "br2-external/package/proaudio-player"
+NATIVE_RUNTIME = ROOT / "br2-external/package/proaudio-player-native/runtime"
 SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
 
 
@@ -12,7 +12,7 @@ def test_persistent_runtime_files_are_reowned_for_native_daemon():
         / "br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/"
         "proaudio-player/prepare-storage"
     ).read_text(encoding="utf-8")
-    tmpfiles = (PLAYER_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
+    tmpfiles = (NATIVE_RUNTIME / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
 
     for name in (
         "state.json",
