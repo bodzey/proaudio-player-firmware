@@ -52,7 +52,7 @@ endif
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_AIRPLAY),y)
 define PROAUDIO_PLAYER_NATIVE_INSTALL_AIRPLAY_SYSTEMD
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-shairport.service \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-shairport.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-shairport.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-shairport.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-shairport.service
@@ -67,7 +67,7 @@ endif
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA),y)
 define PROAUDIO_PLAYER_NATIVE_INSTALL_DLNA_SYSTEMD
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-dlna.service \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-dlna.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-dlna.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-dlna.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-dlna.service
@@ -82,7 +82,7 @@ endif
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_SPOTIFY),y)
 define PROAUDIO_PLAYER_NATIVE_INSTALL_SPOTIFY_SYSTEMD
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-spotifyd.service \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-spotifyd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-spotifyd.service
 	ln -sf /usr/lib/systemd/system/proaudio-player-spotifyd.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/proaudio-player-spotifyd.service
@@ -108,7 +108,7 @@ endif
 ifeq ($(BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE_DLNA),y)
 define PROAUDIO_PLAYER_NATIVE_INSTALL_DLNA_CONFIG
 	$(INSTALL) -D -m 0755 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/dlna-renderer.sh \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/dlna-renderer.sh \
 		$(TARGET_DIR)/usr/libexec/proaudio-player/dlna-renderer.sh
 endef
 else
@@ -154,10 +154,10 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/assets/announcements/minute_silence.mp3 \
 		$(TARGET_DIR)/usr/share/proaudio-player/announcements/minute_silence.mp3
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player.tmpfiles.conf \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player.tmpfiles.conf \
 		$(TARGET_DIR)/usr/lib/tmpfiles.d/proaudio-player.conf
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpris.conf \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-mpris.conf \
 		$(TARGET_DIR)/usr/share/dbus-1/system.d/proaudio-player-mpris.conf
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_AIRPLAY_CONFIG)
 	$(PROAUDIO_PLAYER_NATIVE_INSTALL_DLNA_CONFIG)
@@ -171,19 +171,19 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 	rm -f $(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter-restart.service
 	rm -f $(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-limiter.path
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-buses.service \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-buses.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-buses.service
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-audio-output.service \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-audio-output.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-audio-output.service
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-audio-output.path \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-audio-output.path \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-audio-output.path
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-output-watch.service \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-output-watch.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-output-watch.service
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/proaudio-player-mpd.service \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/proaudio-player-mpd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-mpd.service
 	$(INSTALL) -D -m 0644 $(@D)/systemd/proaudio-player-native.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/proaudio-player-native.service
@@ -192,7 +192,7 @@ define PROAUDIO_PLAYER_NATIVE_INSTALL_INIT_SYSTEMD
 	# for port 6600. Keep the packaged units disabled while retaining the
 	# Buildroot-managed MPD binary and libraries.
 	$(INSTALL) -D -m 0644 \
-		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player/00-proaudio-player.preset \
+		$(BR2_EXTERNAL_PROAUDIO_PATH)/package/proaudio-player-native/runtime/00-proaudio-player.preset \
 		$(TARGET_DIR)/usr/lib/systemd/system-preset/00-proaudio-player.preset
 	rm -f $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/mpd.service
 	rm -f $(TARGET_DIR)/etc/systemd/system/sockets.target.wants/mpd.socket
