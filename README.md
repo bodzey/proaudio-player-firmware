@@ -86,12 +86,12 @@ Raspberry Pi 4 Model B uses its onboard Broadcom Wi-Fi through NetworkManager. E
 
 1. Ethernet has priority. While Ethernet has a default route, Wi-Fi remains disconnected.
 2. If Ethernet is unavailable, the saved `proaudio-wifi` profile is used as the fallback.
-3. Only when neither Ethernet nor saved Wi-Fi provides a route, it creates the setup access point `ProAudio-Player-XXXX`.
-4. The setup access point intentionally has no Wi-Fi password and does not route Internet/LAN traffic.
-5. DHCP and captive DNS direct setup clients to `http://192.168.4.1/`; normal LAN port 80 redirects to the player UI on port 8080.
-6. The portal scans nearby Wi-Fi networks, accepts SSID/password and attempts the connection.
-7. On success the credentials are saved as `proaudio-wifi` and the setup AP is removed.
-8. On failure the setup AP returns and allows another attempt.
+3. On a device without a saved Wi-Fi profile, 15 seconds without connectivity starts the setup access point `ProAudio-Player-XXXX`.
+4. If a saved Wi-Fi profile later becomes unavailable, provisioning is not exposed automatically; hold the setup button or run `proaudio-networkctl setup`.
+5. The setup access point uses WPA protection. The development default is `proaudio-setup`; production/manufacturing may replace it in `/etc/proaudio-networkd.conf`.
+6. The setup network does not route Internet/LAN traffic. DHCP and captive DNS direct setup clients to `http://192.168.4.1/`; normal LAN port 80 redirects to the player UI on port 8080.
+7. The portal scans nearby Wi-Fi networks, accepts SSID/password and attempts the connection.
+8. On success the credentials are saved as `proaudio-wifi` and the setup AP is removed. On failure the protected setup AP returns for another attempt.
 
 A physical recovery/setup button is supported on BCM GPIO26:
 
@@ -99,7 +99,7 @@ A physical recovery/setup button is supported on BCM GPIO26:
 Raspberry Pi physical pin 37 (GPIO26) ---- momentary button ---- physical pin 39 (GND)
 ```
 
-Holding the button for 5 seconds enters Setup Mode. No keyboard or display is required. GPIO is handled through the modern character-device API (`python-gpiod`), not deprecated sysfs GPIO.
+Holding the button for 5 seconds enters Setup Mode. No keyboard or display is required. GPIO is handled through the modern character-device API with `libgpiod`/`gpiomon`; no Python runtime is used.
 
 Setup Mode can also be requested from a shell:
 
@@ -120,7 +120,7 @@ proaudio-networkctl logs 200
 
 `BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE=y` installs the pinned Rust control plane and selects PipeWire/WirePlumber, PulseAudio client compatibility, MPV, MPD/MPC and enabled network audio engines.
 
-`BR2_PACKAGE_PROAUDIO_NETWORKD=y` is the Raspberry Pi provisioning layer. It owns Wi-Fi/AP switching, captive portal and the GPIO setup button; these platform-specific functions are intentionally kept outside `proaudio_player` core.
+`BR2_PACKAGE_PROAUDIO_NETWORKD=y` is the Raspberry Pi provisioning layer. It owns Wi-Fi/AP switching, captive portal and the GPIO setup button; these platform-specific functions are intentionally kept outside the `proaudio-player-native` core.
 
 AirPlay, DLNA and Spotify Connect are enabled by default. PulseAudio is used only for client/libpulse compatibility; `pipewire-pulse` is the audio server.
 
