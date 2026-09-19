@@ -34,38 +34,46 @@ Branch pairing is explicit:
 
 Display/video:
 
-- no HDMI output;
-- no firmware/KMS framebuffer setup;
-- no DRM or framebuffer kernel stack;
-- no virtual terminal/local graphical console;
-- no camera/media kernel stack;
-- minimal GPU memory allocation;
-- UART remains available for recovery/debugging.
+- there is no local graphical UI, framebuffer console or virtual terminal;
+- VC4/KMS remains enabled only because the HDMI audio codec and HDMI hotplug/ELD path depend on it;
+- firmware mode injection is disabled with `disable_fw_kms_setup=1`, so Linux KMS owns HDMI EDID/mode discovery;
+- V3D rendering, framebuffer emulation, camera/media and composite-video support are disabled;
+- UART remains available in the current development/recovery profile.
 
 Audio/output:
 
-- Raspberry Pi 4 analogue 3.5 mm audio is enabled;
+- Raspberry Pi 4 analogue 3.5 mm audio is enabled in high-quality PWM mode;
+- legacy `snd_bcm2835` owns only the analogue headphones device;
+- HDMI audio is provided by VC4/KMS, not by the legacy `snd_bcm2835` HDMI path;
 - standard USB Audio Class devices are enabled;
-- HDMI audio remains unavailable because HDMI output is disabled;
-- an I2S DAC/HAT can be added later without changing the player core.
+- generic BCM2835 I2S/simple-card support is retained for a future board-specific DAC profile.
 
-USB host ports are restricted to the device classes required by the appliance:
+USB host ports are intentionally narrow:
 
-- USB Audio Class is allowed;
-- USB mass storage and UAS are allowed;
-- flash drives and external disks are supported;
-- ext4, FAT/VFAT, exFAT and NTFS3 support is retained;
+- USB Audio Class devices and hubs are supported;
+- USB mass storage/UAS is disabled because the native appliance has no removable-drive mount contract;
 - keyboards, mice, joysticks and HID are disabled;
-- USB serial/RS-232 adapters are disabled;
-- USB network adapters are disabled;
-- USB printers, test/instrument interfaces, USB/IP and gadget mode are disabled.
+- USB serial/RS-232 and USB network adapters are disabled;
+- printers, USB/IP, gadget mode and unrelated USB device classes are disabled.
+
+Appliance resilience on Raspberry Pi 4:
+
+- the BCM2835 hardware watchdog is enabled and serviced by systemd with a 10-second runtime deadline;
+- a kernel panic automatically reboots after 10 seconds;
+- SYSTEM is mounted with `noatime` and DATA already uses `noatime` to reduce routine storage writes;
+- journald is explicitly volatile and capped in RAM, so diagnostic logging does not continuously write to the SD card;
+- persistent player/media state remains isolated on the DATA ext4 partition;
+- SYSTEM remains read-write because NetworkManager provisioning, SSH host keys and other platform configuration still require mutable system state.
 
 The relevant platform files are:
 
 ```text
 br2-external/board/raspberrypi4-64/config.txt
+br2-external/board/raspberrypi4-64/cmdline.txt
 br2-external/board/raspberrypi4-64/linux-headless-usb.fragment
-br2-external/board/raspberrypi4-64/rootfs-overlay/etc/udev/rules.d/10-proaudio-usb-allowlist.rules
+br2-external/board/raspberrypi4-64/linux-analogue-audio.fragment
+br2-external/board/raspberrypi4-64/rootfs-overlay/etc/systemd/system.conf.d/20-proaudio-watchdog.conf
+br2-external/board/raspberrypi4-64/rootfs-overlay/etc/systemd/journald.conf.d/20-proaudio-volatile.conf
 br2-external/configs/proaudio_rpi4_64_native_defconfig
 ```
 
@@ -363,7 +371,7 @@ and uses the existing DATA size. It never guesses a device name and never
 resizes SYSTEM. This isolates firmware capacity from user media growth and
 prevents a full music library from filling the operating-system filesystem.
 
-Application paths remain stable through links into DATA:
+Application paths remain stable through systemd bind mounts into DATA:
 
 ```text
 /srv/music                         -> /data/music
@@ -383,7 +391,7 @@ lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTUUID,MOUNTPOINTS
 df -h / /data
 systemctl status data.mount proaudio-storage.service --no-pager
 journalctl -b -u data.mount -u proaudio-storage.service --no-pager
-readlink -f /srv/music /var/lib/proaudio-player /var/lib/proaudio-player-alert
+findmnt /srv/music /var/lib/proaudio-player /var/lib/proaudio-player-alert
 ```
 
 This partition-layout change requires writing the new `sdcard.img`; it is not
