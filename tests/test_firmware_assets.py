@@ -270,3 +270,23 @@ def test_alert_media_and_runtime_controls_use_persistent_storage():
     assert "minute_silence_enabled: boolean" in types
     assert "Файли сповіщень" in panel
     assert "Увімкнути систему сповіщень" in panel
+
+
+def test_rpi4_post_image_refreshes_external_boot_policy_every_build():
+    post_image = (
+        ROOT / "br2-external/board/raspberrypi4-64/post-image.sh"
+    ).read_text(encoding="utf-8")
+
+    config_copy = (
+        'install -D -m 0644 "${BOARD_DIR}/config.txt" '
+        '"${BINARIES_DIR}/rpi-firmware/config.txt"'
+    )
+    cmdline_copy = (
+        'install -D -m 0644 "${BOARD_DIR}/cmdline.txt" '
+        '"${BINARIES_DIR}/rpi-firmware/cmdline.txt"'
+    )
+
+    assert config_copy in post_image
+    assert cmdline_copy in post_image
+    assert post_image.index(config_copy) < post_image.index("FILES=()")
+    assert post_image.index(cmdline_copy) < post_image.index("FILES=()")
