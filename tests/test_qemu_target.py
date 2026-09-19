@@ -10,7 +10,7 @@ def test_qemu_profile_runs_current_native_and_webui_stack():
         ROOT / "br2-external/configs/proaudio_qemu_aarch64_defconfig"
     ).read_text(encoding="utf-8")
 
-    assert "# BR2_PACKAGE_PROAUDIO_PLAYER is not set" in config
+    assert "BR2_PACKAGE_PROAUDIO_PLAYER=y" not in config
     assert "BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE=y" in config
     assert "BR2_PACKAGE_PROAUDIO_WEBUI=y" in config
     assert "# BR2_PACKAGE_PROAUDIO_NETWORKD is not set" in config
@@ -29,7 +29,7 @@ def test_qemu_inherits_common_runtime_and_mdns_policy():
     ).read_text(encoding="utf-8")
     tmpfiles = (
         ROOT
-        / "br2-external/package/proaudio-player"
+        / "br2-external/package/proaudio-player-native/runtime"
         / "proaudio-player.tmpfiles.conf"
     ).read_text(encoding="utf-8")
     networkd_makefile = (
