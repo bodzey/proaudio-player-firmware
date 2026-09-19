@@ -1,0 +1,19 @@
+[Unit]
+Description=MPD local music and Internet radio source
+After=proaudio-player-buses.service
+Wants=proaudio-player-buses.service
+Conflicts=mpd.service
+
+[Service]
+Type=simple
+User=proaudio-player
+Group=proaudio-player
+Environment=XDG_RUNTIME_DIR=/run/proaudio-player
+Environment=PULSE_SERVER=unix:/run/pulse/native
+Environment=PULSE_SINK=proaudio_player_music
+ExecStart=/usr/bin/mpd --no-daemon /etc/proaudio-player-alert/mpd.conf
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
