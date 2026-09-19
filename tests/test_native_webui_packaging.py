@@ -77,6 +77,24 @@ def test_native_audio_runtime_packages_unity_graph_and_generic_configs():
     assert "Restart=always" in output_watch_service
 
 
+def test_airplay_package_exposes_native_and_mpris_dbus_interfaces():
+    shairport_makefile = (
+        ROOT
+        / "br2-external/package/proaudio-shairport-sync/proaudio-shairport-sync.mk"
+    ).read_text(encoding="utf-8")
+    dbus_policy = (PLAYER_PACKAGE / "proaudio-player-mpris.conf").read_text(
+        encoding="utf-8"
+    )
+
+    assert "--with-dbus-interface" in shairport_makefile
+    assert "--without-dbus-interface" not in shairport_makefile
+    assert "--with-mpris-interface" in shairport_makefile
+    assert 'own_prefix="org.mpris.MediaPlayer2.ShairportSync"' in dbus_policy
+    assert 'send_destination_prefix="org.mpris.MediaPlayer2.ShairportSync"' in dbus_policy
+    assert 'own_prefix="org.gnome.ShairportSync"' in dbus_policy
+    assert 'send_destination_prefix="org.gnome.ShairportSync"' in dbus_policy
+
+
 def test_native_audio_topology_has_one_final_physical_output_path():
     buses = (
         ROOT / "sources/proaudio-player-native/scripts/audio-buses.sh"
