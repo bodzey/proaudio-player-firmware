@@ -308,11 +308,10 @@ impl NetworkDaemon {
 
         let mut networks: Vec<_> = found.into_values().collect();
         networks.sort_by(|left, right| {
-            right.signal.cmp(&left.signal).then_with(|| {
-                left.ssid
-                    .to_lowercase()
-                    .cmp(&right.ssid.to_lowercase())
-            })
+            right
+                .signal
+                .cmp(&left.signal)
+                .then_with(|| left.ssid.to_lowercase().cmp(&right.ssid.to_lowercase()))
         });
         let count = networks.len();
         self.shared.lock().expect("state poisoned").networks = networks;
@@ -320,10 +319,7 @@ impl NetworkDaemon {
     }
 
     fn delete_connection(&self, name: &str) {
-        let _ = self.nmcli(
-            &["connection", "delete", name],
-            Duration::from_secs(10),
-        );
+        let _ = self.nmcli(&["connection", "delete", name], Duration::from_secs(10));
     }
 
     fn start_dnsmasq(&mut self) -> Result<(), String> {
@@ -409,10 +405,7 @@ impl NetworkDaemon {
             ));
         }
 
-        let address = format!(
-            "{}/{}",
-            self.config.setup_address, self.config.setup_prefix
-        );
+        let address = format!("{}/{}", self.config.setup_address, self.config.setup_prefix);
         let channel = self.config.setup_channel.to_string();
         let mut args = vec![
             "connection",
@@ -469,10 +462,7 @@ impl NetworkDaemon {
         );
         if !result.success() {
             self.delete_connection(SETUP_PROFILE);
-            return Err(format!(
-                "cannot start setup hotspot: {}",
-                result.message()
-            ));
+            return Err(format!("cannot start setup hotspot: {}", result.message()));
         }
 
         self.start_dnsmasq()?;
