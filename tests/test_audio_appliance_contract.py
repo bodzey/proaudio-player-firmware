@@ -51,8 +51,15 @@ def test_dev_kernel_is_audio_only_and_keeps_all_supported_outputs():
     assert "camera_auto_detect=0" in config
     assert "display_auto_detect=0" in config
     assert "max_framebuffers=0" in config
+    assert "dtoverlay=vc4-kms-v3d,cma-64" in config
+    assert "disable_fw_kms_setup=1" in config
     assert "dtparam=audio=on" in config
+    assert "audio_pwm_mode=2" in config
+    assert "dtparam=watchdog=on" in config
     assert "snd_bcm2835.enable_headphones=1" in cmdline
+    assert "snd_bcm2835.enable_hdmi=0" in cmdline
+    assert "rootflags=noatime" in cmdline
+    assert "panic=10" in cmdline
     assert "console=tty1" not in cmdline
     assert "console=ttyAMA0,115200" in cmdline
 
