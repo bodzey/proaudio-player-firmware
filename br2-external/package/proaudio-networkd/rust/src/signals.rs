@@ -7,8 +7,10 @@ const SIGINT: i32 = 2;
 const SIGUSR1: i32 = 10;
 const SIGTERM: i32 = 15;
 
+type SignalHandler = extern "C" fn(i32);
+
 unsafe extern "C" {
-    fn signal(sig: i32, handler: usize) -> usize;
+    fn signal(sig: i32, handler: SignalHandler) -> SignalHandler;
 }
 
 extern "C" fn signal_handler(sig: i32) {
@@ -21,9 +23,9 @@ extern "C" fn signal_handler(sig: i32) {
 
 pub fn install() {
     unsafe {
-        signal(SIGUSR1, signal_handler as usize);
-        signal(SIGINT, signal_handler as usize);
-        signal(SIGTERM, signal_handler as usize);
+        let _ = signal(SIGUSR1, signal_handler);
+        let _ = signal(SIGINT, signal_handler);
+        let _ = signal(SIGTERM, signal_handler);
     }
 }
 
