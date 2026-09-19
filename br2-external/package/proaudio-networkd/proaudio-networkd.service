@@ -6,11 +6,18 @@ Requires=NetworkManager.service
 [Service]
 Type=simple
 ExecStart=/usr/sbin/proaudio-networkd
-Restart=always
+Restart=on-failure
 RestartSec=3
 KillMode=mixed
 TimeoutStopSec=10
-Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictSUIDSGID=yes
+UMask=0077
 
 [Install]
 WantedBy=multi-user.target
