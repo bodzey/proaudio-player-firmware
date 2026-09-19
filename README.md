@@ -58,9 +58,10 @@ USB host ports are intentionally narrow:
 
 Appliance resilience on Raspberry Pi 4:
 
-- the BCM2835 hardware watchdog is enabled and serviced by systemd with a 10-second runtime deadline;
+- Raspberry Pi firmware hands an armed hardware watchdog to Linux with a 30-second boot/open deadline;
+- systemd services the watchdog with a 20-second runtime deadline and a 2-minute reboot watchdog;
 - a kernel panic automatically reboots after 10 seconds;
-- SYSTEM is mounted with `noatime` and DATA already uses `noatime` to reduce routine storage writes;
+- SYSTEM and DATA use `noatime` and `errors=remount-ro`; filesystem errors fail safe instead of continuing writes;
 - journald is explicitly volatile and capped in RAM, so diagnostic logging does not continuously write to the SD card;
 - persistent player/media state remains isolated on the DATA ext4 partition;
 - SYSTEM remains read-write because NetworkManager provisioning, SSH host keys and other platform configuration still require mutable system state.
@@ -243,7 +244,7 @@ grep -E 'CONFIG_(DRM|FB|VT|INPUT|HID|USB_HID|SND_USB_AUDIO|SND_BCM2835|USB_SERIA
   upstream/buildroot/output/build/linux-*/.config
 ```
 
-Expected functional state includes USB storage, USB audio, analogue Pi audio, Broadcom Wi-Fi and GPIO character-device support. Display/input and unwanted USB classes should remain disabled.
+Expected functional state includes analogue Pi audio, HDMI audio through VC4/KMS, USB Audio Class, generic I2S/simple-card support, Broadcom Wi-Fi and GPIO character-device support. Display/input, USB mass storage and unrelated USB classes should remain disabled.
 
 ## QEMU AArch64 integration target
 
