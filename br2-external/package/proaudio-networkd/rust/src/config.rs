@@ -25,7 +25,7 @@ impl Default for Config {
         Self {
             wifi_iface: "auto".into(),
             setup_ssid_prefix: "ProAudio-Player".into(),
-            setup_password: String::new(),
+            setup_password: "proaudio-setup".into(),
             setup_address: "192.168.4.1".into(),
             setup_prefix: 24,
             setup_dhcp_start: "192.168.4.20".into(),
@@ -37,6 +37,16 @@ impl Default for Config {
             gpio_line: 26,
             gpio_hold_seconds: 5.0,
         }
+    }
+
+    #[test]
+    fn setup_password_requires_wpa_psk_strength() {
+        assert!(valid_wpa_psk("proaudio-setup"));
+        assert!(valid_wpa_psk(
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ));
+        assert!(!valid_wpa_psk(""));
+        assert!(!valid_wpa_psk("short"));
     }
 }
 
@@ -94,6 +104,12 @@ impl Config {
         {
             return Err("REGDOMAIN must be a two-letter country code".into());
         }
+        if !valid_wpa_psk(&config.setup_password) {
+            return Err(
+                "SETUP_PASSWORD must be 8-63 UTF-8 bytes or exactly 64 hexadecimal characters"
+                    .into(),
+            );
+        }
         config
             .setup_address
             .parse::<IpAddr>()
@@ -106,6 +122,12 @@ fn parse<T: std::str::FromStr>(value: &str, key: &str) -> Result<T, String> {
     value.parse().map_err(|_| format!("invalid {key}: {value}"))
 }
 
+fn valid_wpa_psk(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    (8..=63).contains(&bytes.len())
+        || (bytes.len() == 64 && bytes.iter().all(u8::is_ascii_hexdigit))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,6 +137,7 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.setup_ssid_prefix, "ProAudio-Player");
         assert_eq!(config.setup_address, "192.168.4.1");
+        assert_eq!(config.setup_password, "proaudio-setup");
         assert_eq!(config.gpio_line, 26);
         assert_eq!(config.regdomain, "UA");
     }
