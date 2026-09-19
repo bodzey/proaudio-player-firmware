@@ -76,6 +76,17 @@ def test_shared_runtime_directory_is_explicit_and_private():
     )
 
 
+def test_ext4_mounts_fail_safe_on_filesystem_errors():
+    cmdline = (BOARD / "cmdline.txt").read_text(encoding="utf-8")
+    data_mount = (
+        BOARD
+        / "rootfs-overlay/usr/lib/systemd/system/data.mount"
+    ).read_text(encoding="utf-8")
+
+    assert "rootflags=noatime,errors=remount-ro" in cmdline
+    assert "Options=noatime,nodev,nosuid,noexec,errors=remount-ro" in data_mount
+
+
 def test_data_filesystem_uses_all_capacity():
     post_image = (BOARD / "post-image.sh").read_text(encoding="utf-8")
 
