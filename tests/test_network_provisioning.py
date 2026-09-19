@@ -17,8 +17,8 @@ def test_networkd_is_a_rust_runtime_without_python_dependencies():
     root_config = (ROOT / "br2-external/Config.in").read_text(encoding="utf-8")
 
     assert "BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS" in config
-    assert "select BR2_PACKAGE_LIBGPIOD" in config
-    assert "select BR2_PACKAGE_LIBGPIOD_TOOLS" in config
+    assert "select BR2_PACKAGE_LIBGPIOD2" in config
+    assert "select BR2_PACKAGE_LIBGPIOD2_TOOLS" in config
     assert "BR2_PACKAGE_PYTHON" not in config
     assert "python" not in makefile.lower()
     assert "PROAUDIO_NETWORKD_SITE = $(PROAUDIO_NETWORKD_PKGDIR)/rust" in makefile
