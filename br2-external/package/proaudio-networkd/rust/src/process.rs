@@ -1,6 +1,6 @@
 use std::io::Read;
-use std::process::{Command, Stdio};
-use std::thread;
+use std::process::{ChildStderr, ChildStdout, Command, Stdio};
+use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
 pub struct CommandResult {
@@ -41,7 +41,10 @@ pub fn run(program: &str, args: &[&str], timeout: Duration) -> CommandResult {
         }
     };
 
+    let stdout_reader = child.stdout.take().map(read_stdout);
+    let stderr_reader = child.stderr.take().map(read_stderr);
     let deadline = Instant::now() + timeout;
+
     let code = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status.code().unwrap_or(1),
@@ -56,27 +59,46 @@ pub fn run(program: &str, args: &[&str], timeout: Duration) -> CommandResult {
                 let _ = child.wait();
                 return CommandResult {
                     code: 125,
-                    stdout: String::new(),
-                    stderr: error.to_string(),
+                    stdout: join_output(stdout_reader),
+                    stderr: append_error(join_output(stderr_reader), &error.to_string()),
                 };
             }
         }
     };
 
-    let mut stdout = String::new();
-    let mut stderr = String::new();
-    if let Some(mut pipe) = child.stdout.take() {
-        let _ = pipe.read_to_string(&mut stdout);
-    }
-    if let Some(mut pipe) = child.stderr.take() {
-        let _ = pipe.read_to_string(&mut stderr);
-    }
-
     CommandResult {
         code,
-        stdout,
-        stderr,
+        stdout: join_output(stdout_reader),
+        stderr: join_output(stderr_reader),
     }
+}
+
+fn read_stdout(mut pipe: ChildStdout) -> JoinHandle<String> {
+    thread::spawn(move || read_text(&mut pipe))
+}
+
+fn read_stderr(mut pipe: ChildStderr) -> JoinHandle<String> {
+    thread::spawn(move || read_text(&mut pipe))
+}
+
+fn read_text(pipe: &mut impl Read) -> String {
+    let mut output = String::new();
+    let _ = pipe.read_to_string(&mut output);
+    output
+}
+
+fn join_output(reader: Option<JoinHandle<String>>) -> String {
+    reader
+        .and_then(|handle| handle.join().ok())
+        .unwrap_or_default()
+}
+
+fn append_error(mut stderr: String, error: &str) -> String {
+    if !stderr.is_empty() && !stderr.ends_with('\n') {
+        stderr.push('\n');
+    }
+    stderr.push_str(error);
+    stderr
 }
 
 pub fn split_nmcli_escaped(line: &str) -> Vec<String> {
@@ -113,5 +135,11 @@ mod tests {
             split_nmcli_escaped(r"Office\:5G:88:WPA2"),
             ["Office:5G", "88", "WPA2"]
         );
+    }
+
+    #[test]
+    fn appends_process_errors_without_losing_stderr() {
+        assert_eq!(append_error("warning".into(), "failed"), "warning\nfailed");
+        assert_eq!(append_error(String::new(), "failed"), "failed");
     }
 }
