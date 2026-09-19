@@ -7,6 +7,12 @@ DATA_IMAGE="${BINARIES_DIR}/data.ext4"
 DATA_IMAGE_SIZE_MIB=64
 REPO_ROOT="$(cd "${BR2_EXTERNAL_PROAUDIO_PATH}/.." && pwd -P)"
 
+# rpi-firmware is a stamped Buildroot package and does not track content
+# changes in external config.txt/cmdline.txt files. Refresh them explicitly on
+# every image build so incremental builds cannot package stale boot policy.
+install -D -m 0644 "${BOARD_DIR}/config.txt" "${BINARIES_DIR}/rpi-firmware/config.txt"
+install -D -m 0644 "${BOARD_DIR}/cmdline.txt" "${BINARIES_DIR}/rpi-firmware/cmdline.txt"
+
 FILES=()
 for file in "${BINARIES_DIR}"/*.dtb "${BINARIES_DIR}"/rpi-firmware/*; do
 	FILES+=( "${file#"${BINARIES_DIR}"/}" )
