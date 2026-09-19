@@ -56,12 +56,7 @@ fn run() -> Result<(), String> {
     eprintln!("INFO Wi-Fi interface: {}", daemon.interface());
 
     let setup_ssid = daemon.setup_ssid();
-    let http_thread = portal::start(
-        config.clone(),
-        Arc::clone(&shared),
-        tx.clone(),
-        setup_ssid,
-    )?;
+    let http_thread = portal::start(config.clone(), Arc::clone(&shared), tx.clone(), setup_ssid)?;
     gpio::start(config.clone(), tx.clone());
 
     let mut setup: Option<SetupSession> = None;
