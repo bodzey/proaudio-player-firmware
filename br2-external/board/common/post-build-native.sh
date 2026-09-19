@@ -78,7 +78,6 @@ if [ -f "$TARGET_DIR/usr/lib/systemd/system/proaudio-player-native.service" ]; t
 		"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/proaudio-player-native.service"
 fi
 
-
 # Native appliance images must remain free of a target-side Python runtime.
 # Python is allowed on the build host for tooling/tests, but never in the
 # deployed root filesystem.
