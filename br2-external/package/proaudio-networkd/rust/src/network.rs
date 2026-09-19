@@ -353,6 +353,7 @@ impl NetworkDaemon {
                 &dns_arg,
                 &captive_arg,
                 &wildcard_arg,
+                "--dhcp-leasefile=/run/proaudio-networkd.leases",
                 "--no-resolv",
                 "--no-hosts",
             ])
