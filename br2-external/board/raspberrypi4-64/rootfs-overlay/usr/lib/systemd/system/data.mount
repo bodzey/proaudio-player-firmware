@@ -6,7 +6,7 @@ Before=local-fs.target
 What=/dev/disk/by-partuuid/50524155-03
 Where=/data
 Type=ext4
-Options=noatime,nodev,nosuid,noexec
+Options=noatime,nodev,nosuid,noexec,errors=remount-ro
 TimeoutSec=30
 
 [Install]
