@@ -81,12 +81,7 @@ fn handle_client(
         }
         header_bytes += line.len();
         if header_bytes > 8192 {
-            write_response(
-                &mut stream,
-                "431 Request Header Fields Too Large",
-                &[],
-                "",
-            );
+            write_response(&mut stream, "431 Request Header Fields Too Large", &[], "");
             return;
         }
         if line == "\r\n" || line == "\n" || line.is_empty() {
