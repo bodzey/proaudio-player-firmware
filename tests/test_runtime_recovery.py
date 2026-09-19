@@ -53,3 +53,21 @@ def test_spotify_discovery_malformed_blob_forces_clean_receiver_restart():
     assert "DiscoveryEvent::ServerError" in patch
     assert "Spotify discovery stream terminated" in patch
     assert "encrypted_blob_len < 36" in patch
+
+
+def test_rpi4_runtime_uses_hardware_watchdog_and_volatile_journal():
+    overlay = (
+        ROOT
+        / "br2-external/board/raspberrypi4-64/rootfs-overlay/etc/systemd"
+    )
+    watchdog = (overlay / "system.conf.d/20-proaudio-watchdog.conf").read_text(
+        encoding="utf-8"
+    )
+    journal = (overlay / "journald.conf.d/20-proaudio-volatile.conf").read_text(
+        encoding="utf-8"
+    )
+
+    assert "RuntimeWatchdogSec=10s" in watchdog
+    assert "Storage=volatile" in journal
+    assert "RuntimeMaxUse=16M" in journal
+    assert "RuntimeMaxFileSize=4M" in journal

@@ -3,7 +3,7 @@ fixup_file=fixup4.dat
 kernel=Image
 arm_64bit=1
 
-# Audio appliance: never probe or expose a local video path.
+# Headless audio appliance: no local UI, camera or composite-video path.
 disable_splash=1
 boot_delay=0
 disable_overscan=1
@@ -12,15 +12,22 @@ camera_auto_detect=0
 max_framebuffers=0
 enable_tvout=0
 
-# VC4 KMS is retained only for HDMI audio. Keep CMA deliberately small because
-# there is no framebuffer, camera, codec or 3D workload in ProAudio Player.
+# HDMI audio is provided by VC4/KMS. Let Linux KMS own EDID/mode discovery
+# instead of injecting a firmware-selected video= mode into the kernel command
+# line. No framebuffer console, VT or V3D userspace stack is built.
 dtoverlay=vc4-kms-v3d,cma-64
+disable_fw_kms_setup=1
 
-# Keep the Raspberry Pi 4 built-in 3.5 mm PWM output available. USB, HDMI and
-# future I2S/ASoC DACs remain provided by the kernel audio stack as well.
+# Keep the Raspberry Pi 4 built-in 3.5 mm PWM output available and explicitly
+# use the high-quality PWM mode. The legacy bcm2835 HDMI path is disabled on
+# the kernel command line so HDMI audio has one owner: VC4/KMS.
 dtparam=audio=on
+audio_pwm_mode=2
 
-# Bluetooth is not part of the product. Keep PL011 available for DEV serial SSH/
-# console diagnostics; production disables UART separately.
+# Arm the BCM2835 hardware watchdog; systemd services it at runtime.
+dtparam=watchdog=on
+
+# Bluetooth is not part of the product. PL011 remains available for DEV/recovery
+# serial diagnostics on the current rpi4-native profile.
 dtoverlay=disable-bt
 enable_uart=1
