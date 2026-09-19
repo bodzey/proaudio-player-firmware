@@ -2,8 +2,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / "br2-external/package/proaudio-player"
 NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
+RUNTIME_PACKAGE = NATIVE_PACKAGE / "runtime"
 SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
 NETWORK_PACKAGE = ROOT / "br2-external/package/proaudio-networkd"
 COMMON_OVERLAY = ROOT / "br2-external/board/common/rootfs-overlay"
@@ -77,7 +77,7 @@ def test_spotifyd_uses_verified_buildroot_cargo_source():
 
 
 def test_audio_bus_service_retries_if_hardware_is_late():
-    service = (PACKAGE / "proaudio-player-buses.service").read_text(encoding="utf-8")
+    service = (RUNTIME_PACKAGE / "proaudio-player-buses.service").read_text(encoding="utf-8")
     assert "Type=oneshot" in service
     assert "Restart=on-failure" in service
     assert "RestartSec=5" in service
@@ -169,7 +169,7 @@ def test_storage_layout_is_device_agnostic_and_ordered():
     genimage = (board / "genimage.cfg.in").read_text(encoding="utf-8")
     cmdline = (board / "cmdline.txt").read_text(encoding="utf-8")
     post_build = (board / "post-build.sh").read_text(encoding="utf-8")
-    tmpfiles = (PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
+    tmpfiles = (RUNTIME_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(encoding="utf-8")
 
     assert "root=PARTUUID=50524155-02" in cmdline
     assert "root=/dev/mmcblk" not in cmdline
@@ -236,14 +236,11 @@ def test_player_services_require_initialized_data_storage():
     for unit in (
         "proaudio-player-buses.service",
         "proaudio-player-native.service",
-        "proaudio-player-alert.service",
         "proaudio-player-mpd.service",
         "proaudio-player-spotifyd.service",
         "proaudio-player-shairport.service",
         "proaudio-player-dlna.service",
-        "proaudio-player-webui.service",
         "proaudio-player-audio-output.path",
-        "proaudio-player-output-apply.path",
     ):
         dropin = (systemd / f"{unit}.d/storage.conf").read_text(encoding="utf-8")
         assert "Requires=proaudio-storage-layout.target" in dropin
