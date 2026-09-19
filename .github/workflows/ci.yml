@@ -44,8 +44,10 @@ jobs:
       - name: Validate Rust network daemon
         run: |
           rustup toolchain install 1.88.0 --profile minimal --component rustfmt --component clippy
+          rustup target add aarch64-unknown-linux-gnu --toolchain 1.88.0
           cargo +1.88.0 fmt --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml -- --check
           cargo +1.88.0 test --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml --locked
+          cargo +1.88.0 check --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml --locked --target aarch64-unknown-linux-gnu
           cargo +1.88.0 clippy --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml --locked -- -D warnings
 
       - name: Run Buildroot package checks
@@ -74,3 +76,33 @@ jobs:
 
       - name: Run repository-owned recovery tests
         run: python -m pytest -q tests/test_runtime_recovery.py
+
+
+  networkd-cross-build:
+    needs: static-validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout firmware repository
+        uses: actions/checkout@v5
+
+      - name: Initialize pinned Buildroot tooling
+        run: git submodule update --init --depth 1 upstream/buildroot
+
+      - name: Configure Raspberry Pi native target
+        run: |
+          output="$RUNNER_TEMP/proaudio-networkd-build"
+          make -C upstream/buildroot \
+            O="$output" \
+            BR2_EXTERNAL="$GITHUB_WORKSPACE/br2-external" \
+            proaudio_rpi4_64_native_defconfig
+          printf 'PROAUDIO_NETWORKD_OUTPUT=%s\n' "$output" >> "$GITHUB_ENV"
+
+      - name: Cross-build Rust network daemon through Buildroot
+        run: |
+          make -C upstream/buildroot \
+            O="$PROAUDIO_NETWORKD_OUTPUT" \
+            BR2_EXTERNAL="$GITHUB_WORKSPACE/br2-external" \
+            -j2 proaudio-networkd
+          test -x "$PROAUDIO_NETWORKD_OUTPUT/target/usr/sbin/proaudio-networkd"
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python"
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python3"
