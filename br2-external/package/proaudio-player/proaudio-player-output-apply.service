@@ -1,9 +1,0 @@
-[Unit]
-Description=Apply ProAudio Player audio output selection
-After=pipewire-pulse.service
-ConditionPathExists=/var/lib/proaudio-player-alert/audio-output.env
-
-[Service]
-Type=oneshot
-ExecStart=/bin/systemctl restart proaudio-player-buses.service
-ExecStart=/bin/systemctl try-restart proaudio-player-mpd.service proaudio-player-spotifyd.service proaudio-player-shairport.service proaudio-player-dlna.service
