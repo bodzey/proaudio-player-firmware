@@ -109,6 +109,9 @@ jobs:
             -j2 proaudio-networkd
           test -x "$PROAUDIO_NETWORKD_OUTPUT/target/usr/sbin/proaudio-networkd"
           ! grep -q '^BR2_PACKAGE_PYTHON3=y
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python"
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python3"
+          ! find "$PROAUDIO_NETWORKD_OUTPUT/target/usr/lib" -maxdepth 1 -type d -name 'python3*' -print -quit | grep -q .
  "$PROAUDIO_NETWORKD_OUTPUT/.config"
           test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python"
           test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python3"
