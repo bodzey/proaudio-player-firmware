@@ -3,8 +3,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BOARD = ROOT / "br2-external/board/raspberrypi4-64"
-PLAYER_PACKAGE = ROOT / "br2-external/package/proaudio-player"
 NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
+NATIVE_RUNTIME = NATIVE_PACKAGE / "runtime"
 WEBUI_PACKAGE = ROOT / "br2-external/package/proaudio-webui"
 SYSTEMD_OVERLAY = BOARD / "rootfs-overlay/etc/systemd/system"
 
@@ -45,7 +45,6 @@ def test_empty_native_runtime_state_is_not_seeded():
 def test_storage_dependent_path_units_do_not_join_early_paths_target():
     for name in (
         "proaudio-player-audio-output.path.d/storage.conf",
-        "proaudio-player-output-apply.path.d/storage.conf",
     ):
         dropin = (SYSTEMD_OVERLAY / name).read_text(encoding="utf-8")
         assert "DefaultDependencies=no" in dropin
@@ -66,7 +65,7 @@ def test_networkd_wait_online_cannot_block_offline_boot():
 
 
 def test_shared_runtime_directory_is_explicit_and_private():
-    tmpfiles = (PLAYER_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(
+    tmpfiles = (NATIVE_RUNTIME / "proaudio-player.tmpfiles.conf").read_text(
         encoding="utf-8"
     )
 
@@ -101,10 +100,7 @@ def test_alert_token_is_not_baked_into_native_rootfs():
     native_makefile = (
         NATIVE_PACKAGE / "proaudio-player-native.mk"
     ).read_text(encoding="utf-8")
-    legacy_makefile = (PLAYER_PACKAGE / "proaudio-player.mk").read_text(
-        encoding="utf-8"
-    )
-    tmpfiles = (PLAYER_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(
+    tmpfiles = (NATIVE_RUNTIME / "proaudio-player.tmpfiles.conf").read_text(
         encoding="utf-8"
     )
     storage = (
@@ -116,11 +112,6 @@ def test_alert_token_is_not_baked_into_native_rootfs():
     assert "/etc/proaudio-player-alert/alerts-token" not in native_makefile
     assert "/etc/proaudio-player-alert/alerts-token" not in tmpfiles
     assert "alerts-token" in storage
-
-    # The legacy Python profile still owns its old immutable placeholder until
-    # that profile is retired/migrated. It must remain empty, never a baked key.
-    assert "$(INSTALL) -D -m 0600 /dev/null" in legacy_makefile
-    assert "$(TARGET_DIR)/etc/proaudio-player-alert/alerts-token" in legacy_makefile
 
 
 def test_webui_reuses_verified_npm_cache():
