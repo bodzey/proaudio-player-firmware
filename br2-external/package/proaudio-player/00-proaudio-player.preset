@@ -1,5 +1,0 @@
-# Keep Buildroot's generic MPD unit and socket installed but disabled. ProAudio Player
-# starts the same binary with its dedicated audio routing and configuration.
-disable mpd.service
-disable mpd.socket
-enable proaudio-player-mpd.service
