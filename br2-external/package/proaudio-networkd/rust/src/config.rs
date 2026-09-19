@@ -38,16 +38,6 @@ impl Default for Config {
             gpio_hold_seconds: 5.0,
         }
     }
-
-    #[test]
-    fn setup_password_requires_wpa_psk_strength() {
-        assert!(valid_wpa_psk("proaudio-setup"));
-        assert!(valid_wpa_psk(
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        ));
-        assert!(!valid_wpa_psk(""));
-        assert!(!valid_wpa_psk("short"));
-    }
 }
 
 impl Config {
@@ -140,5 +130,15 @@ mod tests {
         assert_eq!(config.setup_password, "proaudio-setup");
         assert_eq!(config.gpio_line, 26);
         assert_eq!(config.regdomain, "UA");
+    }
+
+    #[test]
+    fn setup_password_requires_wpa_psk_strength() {
+        assert!(valid_wpa_psk("proaudio-setup"));
+        assert!(valid_wpa_psk(
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ));
+        assert!(!valid_wpa_psk(""));
+        assert!(!valid_wpa_psk("short"));
     }
 }
