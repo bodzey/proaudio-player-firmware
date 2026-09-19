@@ -1,5 +1,4 @@
 from pathlib import Path
-import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,48 +8,73 @@ BOARD = ROOT / "br2-external/board/raspberrypi4-64"
 COMMON_POST_BUILD = ROOT / "br2-external/board/common/post-build-native.sh"
 
 
-def test_network_patches_apply_in_build_order(tmp_path):
-    source = PACKAGE / "proaudio-networkd"
-    patch_files = sorted(PACKAGE.glob("*.patch"))
+def test_networkd_is_a_rust_runtime_without_python_dependencies():
+    config = (PACKAGE / "Config.in").read_text(encoding="utf-8")
     makefile = (PACKAGE / "proaudio-networkd.mk").read_text(encoding="utf-8")
-    work_source = tmp_path / "proaudio-networkd"
-    work_source.write_bytes(source.read_bytes())
+    service = (PACKAGE / "proaudio-networkd.service").read_text(encoding="utf-8")
+    runtime_config = (PACKAGE / "proaudio-networkd.conf").read_text(encoding="utf-8")
+    cargo = (PACKAGE / "rust/Cargo.toml").read_text(encoding="utf-8")
+    root_config = (ROOT / "br2-external/Config.in").read_text(encoding="utf-8")
 
-    assert patch_files
-    for patch_file in patch_files:
-        result = subprocess.run(
-            ["patch", "--batch", "--forward", "-p1", "--directory", str(tmp_path)],
-            input=patch_file.read_text(encoding="utf-8"),
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        assert result.returncode == 0, (
-            f"{patch_file.name} failed:\n{result.stdout}{result.stderr}"
-        )
+    assert "BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS" in config
+    assert "BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10" in config
+    assert "select BR2_PACKAGE_LIBGPIOD2" in config
+    assert "select BR2_PACKAGE_LIBGPIOD2_TOOLS" in config
+    assert "BR2_PACKAGE_PYTHON" not in config
+    assert "python" not in makefile.lower()
+    assert "PROAUDIO_NETWORKD_SITE = $(PROAUDIO_NETWORKD_PKGDIR)/rust" in makefile
+    assert "$(eval $(cargo-package))" in makefile
+    assert 'name = "proaudio-networkd"' in cargo
+    assert 'rust-version = "1.88"' in cargo
+    assert "PYTHONUNBUFFERED" not in service
+    assert "NoNewPrivileges=yes" in service
+    assert "SETUP_PASSWORD=proaudio-setup" in runtime_config
+    assert "SETUP_PASSWORD=\n" not in runtime_config
 
-    patched = work_source.read_text(encoding="utf-8")
-    assert "def _prepare_station_connection(self, ssid):" in patched
-    assert '"device", "wifi", "rescan", "ifname", self.iface' in patched
-    assert '"ssid", ssid' in patched
-    assert 'args += ["hidden", "yes"]' in patched
-    assert "visible = self._prepare_station_connection(ssid)" in patched
-    assert "def configure_hostname(self):" in patched
-    assert 'wanted = f"proaudio-player-{self.device_serial_suffix().lower()}"' in patched
-    assert "self.configure_hostname()" in patched
+    assert not (PACKAGE / "proaudio-networkd").exists()
+    assert not list(PACKAGE.glob("*.patch"))
+    legacy_package = ROOT / "br2-external/package/proaudio-player"
+    assert not legacy_package.exists()
+    assert 'package/proaudio-player/Config.in' not in root_config
 
-    assert "PROAUDIO_NETWORKD_APPLY_LOCAL_PATCHES" in makefile
-    assert "$(APPLY_PATCHES) $(@D) $(PROAUDIO_NETWORKD_PKGDIR)" in makefile
-    assert (
-        "PROAUDIO_NETWORKD_PRE_CONFIGURE_HOOKS += "
-        "PROAUDIO_NETWORKD_APPLY_LOCAL_PATCHES"
-    ) in makefile
+    for name in ("proaudio_rpi4_64_defconfig", "proaudio_rpi4_64_native_defconfig"):
+        defconfig = (ROOT / "br2-external/configs" / name).read_text(encoding="utf-8")
+        assert "BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE=y" in defconfig
+        assert "BR2_PACKAGE_PROAUDIO_WEBUI=y" in defconfig
+        assert "BR2_PACKAGE_PROAUDIO_NETWORKD=y" in defconfig
+        assert "BR2_PACKAGE_PROAUDIO_PLAYER=y" not in defconfig
+        assert "BR2_PACKAGE_PYTHON3" not in defconfig
 
-    failure_tail = patched.split(
-        'LOG.warning("Wi-Fi provisioning failed for %s: %s", ssid, error)', 1
-    )[1].split("except Exception as exc:", 1)[0]
-    assert "self.scan()" not in failure_tail
-    assert "self.start_ap()" in failure_tail
+
+def test_network_provisioning_contract_is_integrated_in_rust():
+    network = (PACKAGE / "rust/src/network.rs").read_text(encoding="utf-8")
+    portal = (PACKAGE / "rust/src/portal.rs").read_text(encoding="utf-8")
+    main = (PACKAGE / "rust/src/main.rs").read_text(encoding="utf-8")
+    gpio = (PACKAGE / "rust/src/gpio.rs").read_text(encoding="utf-8")
+
+    assert '"--rescan",' in network
+    assert '"auto",' in network
+    assert "prepare_station_connection" in network
+    assert '"rescan",' in network
+    assert '"ssid",' in network
+    assert 'args.extend_from_slice(&["hidden", "yes"])' in network
+    assert "thread::sleep(Duration::from_millis(750))" in network
+    assert "configure_hostname" in network
+    assert 'format!("114,http://{}/", self.config.setup_address)' in network
+
+    assert 'raw_path.split(\'?\')' in portal
+    assert "content_length > 4096" in portal
+    assert "header_bytes > 8192" in portal
+    assert 'ControlMessage::Connect { ssid, password }' in portal
+
+    assert "wifi_profile_exists()" in main
+    assert "automatic provisioning is suppressed" in main
+    assert "no saved Wi-Fi profile; starting initial Setup Mode" in main
+
+    assert 'Command::new("/usr/bin/gpiomon")' in gpio
+    assert '"pull-up"' in gpio
+    assert '"%E"' in gpio
+    assert "ControlMessage::Setup" in gpio
 
 
 def test_dev_kernel_is_native_audio_appliance_profile():
@@ -64,9 +88,6 @@ def test_dev_kernel_is_native_audio_appliance_profile():
     assert "display_auto_detect=0" in config
     assert "max_framebuffers=0" in config
 
-    # Runtime contract derived from proaudio-player-native: onboard Ethernet and
-    # Broadcom full-MAC Wi-Fi, IPv4 multicast discovery, GPIO setup control,
-    # ext4 state/music, plus HDMI/USB/I2S audio outputs.
     for setting in (
         "CONFIG_GPIOLIB=y",
         "CONFIG_GPIO_CDEV=y",
@@ -90,8 +111,6 @@ def test_dev_kernel_is_native_audio_appliance_profile():
     ):
         assert setting in fragment
 
-    # Current native runtime has no video UI, Bluetooth, removable-drive mount
-    # policy, alternate NIC/WLAN support, router stack or non-ext4 music store.
     for symbol in (
         "CONFIG_COMPILE_TEST",
         "CONFIG_DRM_V3D",
@@ -169,13 +188,17 @@ def test_storage_does_not_seed_an_invalid_empty_mpd_database():
     assert "for file in database state" not in script
 
 
-def test_native_image_removes_unused_pulseaudio_system_policy_and_legacy_token():
+def test_native_image_removes_unused_pulseaudio_policy_and_rejects_python():
     post_build = COMMON_POST_BUILD.read_text(encoding="utf-8")
     board_entry = (BOARD / "post-build-native.sh").read_text(encoding="utf-8")
     makefile = (NATIVE_PACKAGE / "proaudio-player-native.mk").read_text(
         encoding="utf-8"
     )
+
     assert "pulseaudio-system.conf" in post_build
     assert 'rm -f "$TARGET_DIR/etc/proaudio-player-alert/alerts-token"' in post_build
     assert "/etc/proaudio-player-alert/alerts-token" not in makefile
     assert "board/common/post-build-native.sh" in board_entry
+    assert "Python runtime leaked into native target" in post_build
+    assert '"$TARGET_DIR"/usr/bin/python[0-9]*' in post_build
+    assert '"$TARGET_DIR"/usr/lib/python[0-9]*' in post_build

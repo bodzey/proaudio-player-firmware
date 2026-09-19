@@ -134,11 +134,10 @@ network_revision=""
 if git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     native_source_revision="$(git -C "$ROOT_DIR/sources/proaudio-player-native" rev-parse HEAD 2>/dev/null || true)"
     native_package_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-player-native 2>/dev/null || true)"
-    shared_package_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-player 2>/dev/null || true)"
     webui_source_revision="$(git -C "$ROOT_DIR/sources/proaudio-player-webui" rev-parse HEAD 2>/dev/null || true)"
     webui_package_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-webui 2>/dev/null || true)"
     network_revision="$(git -C "$ROOT_DIR" rev-parse HEAD:br2-external/package/proaudio-networkd 2>/dev/null || true)"
-    native_revision="${native_source_revision}:${native_package_revision}:${shared_package_revision}"
+    native_revision="${native_source_revision}:${native_package_revision}"
     webui_revision="${webui_source_revision}:${webui_package_revision}"
 fi
 

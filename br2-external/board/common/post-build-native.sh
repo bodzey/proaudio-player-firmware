@@ -4,7 +4,7 @@ set -eu
 TARGET_DIR="$1"
 
 # Native firmware must not accidentally start stale Python control-plane units
-# when reusing an output directory created by the regular/4STREAM dev firmware.
+# when reusing an output directory created by an older legacy firmware profile.
 for unit in \
 	proaudio-player-alert.service \
 	proaudio-player-webui.service \
@@ -77,3 +77,17 @@ if [ -f "$TARGET_DIR/usr/lib/systemd/system/proaudio-player-native.service" ]; t
 	ln -sf /usr/lib/systemd/system/proaudio-player-native.service \
 		"$TARGET_DIR/etc/systemd/system/multi-user.target.wants/proaudio-player-native.service"
 fi
+
+# Native appliance images must remain free of a target-side Python runtime.
+# Python is allowed on the build host for tooling/tests, but never in the
+# deployed root filesystem.
+for python_path in \
+	"$TARGET_DIR"/usr/bin/python \
+	"$TARGET_DIR"/usr/bin/python[0-9]* \
+	"$TARGET_DIR"/usr/lib/python[0-9]*
+do
+	if [ -e "$python_path" ] || [ -L "$python_path" ]; then
+		printf 'error: Python runtime leaked into native target: %s\n' "$python_path" >&2
+		exit 1
+	fi
+done

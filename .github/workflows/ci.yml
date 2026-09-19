@@ -39,8 +39,16 @@ jobs:
           status=0
           shellcheck br2-external/board/raspberrypi4-64/post-image.sh || status=$?
           shellcheck br2-external/board/raspberrypi4-64/rootfs-overlay/usr/libexec/proaudio-player/prepare-storage || status=$?
-          flake8 br2-external/package/proaudio-networkd/proaudio-networkd || status=$?
           exit "$status"
+
+      - name: Validate Rust network daemon
+        run: |
+          rustup toolchain install 1.88.0 --profile minimal --component rustfmt --component clippy
+          rustup target add aarch64-unknown-linux-gnu --toolchain 1.88.0
+          cargo +1.88.0 fmt --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml -- --check
+          cargo +1.88.0 test --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml --locked
+          cargo +1.88.0 check --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml --locked --target aarch64-unknown-linux-gnu
+          cargo +1.88.0 clippy --manifest-path br2-external/package/proaudio-networkd/rust/Cargo.toml --locked -- -D warnings
 
       - name: Run Buildroot package checks
         run: |
@@ -57,7 +65,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_firmware_assets.py
-          tests/test_network_provisioning_patch.py
+          tests/test_network_provisioning.py
           -k "not alert_media_and_runtime_controls_use_persistent_storage"
 
       - name: Run firmware-owned native packaging tests
@@ -68,3 +76,43 @@ jobs:
 
       - name: Run repository-owned recovery tests
         run: python -m pytest -q tests/test_runtime_recovery.py
+
+
+  networkd-cross-build:
+    needs: static-validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout firmware repository
+        uses: actions/checkout@v5
+
+      - name: Initialize firmware build submodules
+        run: >-
+          git submodule update --init --depth 1
+          upstream/buildroot
+          sources/proaudio-player-native
+          sources/proaudio-player-webui
+
+      - name: Configure Raspberry Pi native target
+        run: |
+          output="$RUNNER_TEMP/proaudio-networkd-build"
+          make -C upstream/buildroot \
+            O="$output" \
+            BR2_EXTERNAL="$GITHUB_WORKSPACE/br2-external" \
+            proaudio_rpi4_64_native_defconfig
+          printf 'PROAUDIO_NETWORKD_OUTPUT=%s\n' "$output" >> "$GITHUB_ENV"
+
+      - name: Cross-build Rust network daemon through Buildroot
+        run: |
+          make -C upstream/buildroot \
+            O="$PROAUDIO_NETWORKD_OUTPUT" \
+            BR2_EXTERNAL="$GITHUB_WORKSPACE/br2-external" \
+            -j2 proaudio-networkd
+          test -x "$PROAUDIO_NETWORKD_OUTPUT/target/usr/sbin/proaudio-networkd"
+          ! grep -q '^BR2_PACKAGE_PYTHON3=y
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python"
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python3"
+          ! find "$PROAUDIO_NETWORKD_OUTPUT/target/usr/lib" -maxdepth 1 -type d -name 'python3*' -print -quit | grep -q .
+ "$PROAUDIO_NETWORKD_OUTPUT/.config"
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python"
+          test ! -e "$PROAUDIO_NETWORKD_OUTPUT/target/usr/bin/python3"
+          ! find "$PROAUDIO_NETWORKD_OUTPUT/target/usr/lib" -maxdepth 1 -type d -name 'python3*' -print -quit | grep -q .

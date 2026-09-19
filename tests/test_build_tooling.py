@@ -130,3 +130,15 @@ def test_local_native_cargo_reproduces_buildroot_vendoring_before_offline_build(
         "PROAUDIO_PLAYER_NATIVE_VENDOR_CARGO_DEPENDENCIES"
     ) in makefile
     assert "$(eval $(cargo-package))" in makefile
+
+
+def test_networkd_uses_buildroot_cargo_without_python_runtime():
+    package = ROOT / "br2-external/package/proaudio-networkd"
+    makefile = (package / "proaudio-networkd.mk").read_text(encoding="utf-8")
+    config = (package / "Config.in").read_text(encoding="utf-8")
+
+    assert "PROAUDIO_NETWORKD_SITE = $(PROAUDIO_NETWORKD_PKGDIR)/rust" in makefile
+    assert "$(eval $(cargo-package))" in makefile
+    assert "python" not in makefile.lower()
+    assert "BR2_PACKAGE_PYTHON" not in config
+    assert "BR2_PACKAGE_HOST_RUSTC_TARGET_ARCH_SUPPORTS" in config
