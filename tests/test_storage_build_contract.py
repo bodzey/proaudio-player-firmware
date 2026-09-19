@@ -104,9 +104,18 @@ def test_alert_token_is_not_baked_into_native_rootfs():
     legacy_makefile = (PLAYER_PACKAGE / "proaudio-player.mk").read_text(
         encoding="utf-8"
     )
+    tmpfiles = (PLAYER_PACKAGE / "proaudio-player.tmpfiles.conf").read_text(
+        encoding="utf-8"
+    )
+    storage = (
+        BOARD
+        / "rootfs-overlay/usr/libexec/proaudio-player/prepare-storage"
+    ).read_text(encoding="utf-8")
 
     assert not overlay_token.exists()
     assert "/etc/proaudio-player-alert/alerts-token" not in native_makefile
+    assert "/etc/proaudio-player-alert/alerts-token" not in tmpfiles
+    assert "alerts-token" in storage
 
     # The legacy Python profile still owns its old immutable placeholder until
     # that profile is retired/migrated. It must remain empty, never a baked key.

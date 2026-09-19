@@ -168,6 +168,7 @@ def test_persistent_state_and_spotify_receiver_are_runtime_safe():
 
     for name in (
         "state.json",
+        "alerts-token",
         "provider-settings.yaml",
         "audio-settings.yaml",
         "audio-output.env",

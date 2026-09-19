@@ -79,6 +79,7 @@ ensure_data_layout()
 	# Runtime state.json is different: an empty JSON document is invalid, so the
 	# native daemon must create it only after it has real state to persist.
 	for file in \
+		alerts-token \
 		provider-settings.yaml \
 		audio-settings.yaml \
 		audio-output.env
