@@ -29,8 +29,8 @@ def test_networkd_is_a_rust_runtime_without_python_dependencies():
 
     assert not (PACKAGE / "proaudio-networkd").exists()
     assert not list(PACKAGE.glob("*.patch"))
-    assert not (ROOT / "br2-external/package/proaudio-player/Config.in").exists()
-    assert not (ROOT / "br2-external/package/proaudio-player/proaudio-player.mk").exists()
+    legacy_package = ROOT / "br2-external/package/proaudio-player"
+    assert not legacy_package.exists()
     assert 'package/proaudio-player/Config.in' not in root_config
 
     for name in ("proaudio_rpi4_64_defconfig", "proaudio_rpi4_64_native_defconfig"):
