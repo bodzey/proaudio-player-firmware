@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "br2-external/package/proaudio-player"
+NATIVE_PACKAGE = ROOT / "br2-external/package/proaudio-player-native"
 SPOTIFY_PACKAGE = ROOT / "br2-external/package/proaudio-spotifyd"
 NETWORK_PACKAGE = ROOT / "br2-external/package/proaudio-networkd"
 COMMON_OVERLAY = ROOT / "br2-external/board/common/rootfs-overlay"
@@ -15,10 +16,11 @@ def test_native_submodule_uses_protocol_relative_repository_url():
 
 
 def test_firmware_installs_core_media_and_wireplumber_rule():
-    makefile = (PACKAGE / "proaudio-player.mk").read_text(encoding="utf-8")
+    makefile = (NATIVE_PACKAGE / "proaudio-player-native.mk").read_text(
+        encoding="utf-8"
+    )
     for name in ("alarm_start.mp3", "alarm_end.mp3", "minute_silence.mp3"):
-        assert f"default_media/{name}" in makefile
-        assert f"media/{name}" in makefile
+        assert f"assets/announcements/{name}" in makefile
     assert "config/wireplumber/51-proaudio-soft-mixer.conf" in makefile
 
     embedded_profile = (
@@ -31,7 +33,7 @@ def test_firmware_installs_core_media_and_wireplumber_rule():
 
 
 def test_required_time_sync_and_source_hash_enforcement_are_enabled():
-    config = (PACKAGE / "Config.in").read_text(encoding="utf-8")
+    config = (NATIVE_PACKAGE / "Config.in").read_text(encoding="utf-8")
     assert "select BR2_PACKAGE_SYSTEMD_TIMESYNCD" in config
 
     for name in ("proaudio_rpi4_64_defconfig", "proaudio_qemu_aarch64_defconfig"):
@@ -55,7 +57,11 @@ def test_rpi4_target_satisfies_player_contract_and_uses_real_interface():
     assert "BR2_TOOLCHAIN_EXTERNAL_BOOTLIN_AARCH64_GLIBC_BLEEDING_EDGE=y" in defconfig
     assert "BR2_TOOLCHAIN_EXTERNAL_BOOTLIN_AARCH64_GLIBC_STABLE=y" not in defconfig
     assert 'BR2_SYSTEM_DHCP="end0"' in defconfig
-    assert "BR2_PACKAGE_PROAUDIO_PLAYER=y" in defconfig
+    assert "BR2_PACKAGE_PROAUDIO_PLAYER_NATIVE=y" in defconfig
+    assert "BR2_PACKAGE_PROAUDIO_WEBUI=y" in defconfig
+    assert "BR2_PACKAGE_PROAUDIO_NETWORKD=y" in defconfig
+    assert "BR2_PACKAGE_PROAUDIO_PLAYER=y" not in defconfig
+    assert "BR2_PACKAGE_PYTHON3" not in defconfig
 
 
 def test_spotifyd_uses_verified_buildroot_cargo_source():
@@ -96,20 +102,23 @@ def test_avahi_is_the_only_mdns_responder():
     assert "10-proaudio-resolved.conf" not in makefile
 
 
-def test_wifi_regdomain_is_early_and_initial_portal_avoids_duplicate_scan():
+def test_wifi_regdomain_and_ap_transition_are_integrated_in_rust():
     cmdline = (
         ROOT / "br2-external/board/raspberrypi4-64/cmdline.txt"
     ).read_text(encoding="utf-8")
-    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
-    transition_patch = (
-        NETWORK_PACKAGE / "0001-stabilize-ap-to-station-provisioning.patch"
+    network = (
+        NETWORK_PACKAGE / "rust/src/network.rs"
     ).read_text(encoding="utf-8")
 
     assert "cfg80211.ieee80211_regdom=UA" in cmdline
-    assert '"device", "wifi", "rescan"' not in daemon
-    assert '"--rescan", "auto"' in daemon
-    assert '"device", "wifi", "rescan"' in transition_patch
-    assert '"ssid", ssid' in transition_patch
+    assert '"--rescan",' in network
+    assert '"auto",' in network
+    assert '"device",' in network
+    assert '"wifi",' in network
+    assert '"rescan",' in network
+    assert '"ssid",' in network
+    assert 'args.extend_from_slice(&["hidden", "yes"])' in network
+    assert "prepare_station_connection" in network
 
 
 def test_mpd_first_boot_state_exists_but_database_is_not_seeded():
@@ -128,10 +137,16 @@ def test_mpd_first_boot_state_exists_but_database_is_not_seeded():
 
 
 def test_captive_portal_advertises_rfc8910_url_and_redirects_probes():
-    daemon = (NETWORK_PACKAGE / "proaudio-networkd").read_text(encoding="utf-8")
-    assert 'f"--dhcp-option=114,http://{addr}/"' in daemon
-    assert "urllib.parse.urlsplit(self.path).path" in daemon
-    assert "self._redirect_setup()" in daemon
+    network = (
+        NETWORK_PACKAGE / "rust/src/network.rs"
+    ).read_text(encoding="utf-8")
+    portal = (
+        NETWORK_PACKAGE / "rust/src/portal.rs"
+    ).read_text(encoding="utf-8")
+
+    assert 'format!("114,http://{}/", self.config.setup_address)' in network
+    assert "raw_path.split('?')" in portal
+    assert 'format!("http://{}/", config.setup_address)' in portal
 
 
 def test_storage_layout_is_device_agnostic_and_ordered():
