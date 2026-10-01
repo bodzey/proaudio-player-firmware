@@ -12,7 +12,19 @@ git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     exit 1
 }
 
-git -C "$ROOT_DIR" submodule sync --recursive
+for path in "${SOURCE_PATHS[@]}"; do
+    branch="$(git -C "$ROOT_DIR" config -f .gitmodules --get "submodule.${path}.branch" || true)"
+    if [[ "$branch" != dev ]]; then
+        printf 'Submodule %s must track dev, found: %s\n' "$path" "${branch:-unset}" >&2
+        exit 1
+    fi
+
+    if [[ -e "$ROOT_DIR/$path/.git" ]] && \
+       [[ -n "$(git -C "$ROOT_DIR/$path" status --porcelain --untracked-files=all)" ]]; then
+        printf 'Submodule %s has local changes; refusing to overwrite them.\n' "$path" >&2
+        exit 1
+    fi
+done
 
 # Buildroot is part of the firmware toolchain contract. Keep its exact gitlink
 # revision instead of following the remote default branch.
@@ -26,26 +38,22 @@ if [[ -f "$legacy_lock" && ! -s "$legacy_lock" ]] && \
     fi
     unlink "$legacy_lock"
 fi
-if git -C "$ROOT_DIR/upstream/buildroot" rev-parse --is-inside-work-tree >/dev/null 2>&1 && \
+if [[ -e "$ROOT_DIR/upstream/buildroot/.git" ]] && \
    [[ -n "$(git -C "$ROOT_DIR/upstream/buildroot" status --porcelain)" ]]; then
     echo "Buildroot submodule has local changes; refusing to overwrite them." >&2
     exit 1
 fi
-git -C "$ROOT_DIR" submodule update --init --recursive upstream/buildroot
-
 for path in "${SOURCE_PATHS[@]}"; do
-    branch="$(git -C "$ROOT_DIR" config -f .gitmodules --get "submodule.${path}.branch" || true)"
-    if [[ "$branch" != dev ]]; then
-        printf 'Submodule %s must track dev, found: %s\n' "$path" "${branch:-unset}" >&2
-        exit 1
-    fi
-
-    if git -C "$ROOT_DIR/$path" rev-parse --is-inside-work-tree >/dev/null 2>&1 && \
-       [[ -n "$(git -C "$ROOT_DIR/$path" status --porcelain)" ]]; then
-        printf 'Submodule %s has local changes; refusing to overwrite them.\n' "$path" >&2
+    [[ -e "$ROOT_DIR/$path/.git" ]] || continue
+    git -C "$ROOT_DIR/$path" fetch origin dev
+    if ! git -C "$ROOT_DIR/$path" merge-base --is-ancestor HEAD refs/remotes/origin/dev; then
+        printf 'Submodule %s has commits outside origin/dev; save them before syncing.\n' "$path" >&2
         exit 1
     fi
 done
+
+git -C "$ROOT_DIR" submodule sync --recursive
+git -C "$ROOT_DIR" submodule update --init --recursive upstream/buildroot
 
 for path in "${SOURCE_PATHS[@]}"; do
     git -C "$ROOT_DIR" submodule update --init --remote --checkout "$path"

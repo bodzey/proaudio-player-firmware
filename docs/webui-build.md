@@ -8,11 +8,12 @@ Repository layout on the firmware `dev` branch:
 proaudio-player-firmware/
 ├── sources/
 │   ├── proaudio-player-native/  -> proaudio-player-native/dev
-│   └── proaudio-player-webui/   -> proaudio-player-webui/newui
+│   └── proaudio-player-webui/   -> proaudio-player-webui/dev
 └── upstream/buildroot/          -> pinned Buildroot revision
 ```
 
-During the `newui` development phase the firmware Web UI submodule tracks the `newui` branch. After that branch is merged into `proaudio-player-webui/dev`, the firmware submodule branch setting should be changed to `dev`.
+Both application submodules track `dev`. Buildroot stays at its recorded gitlink
+revision independently of application updates.
 
 The Buildroot `proaudio-webui` package owns frontend compilation. It uses host Node.js only during the firmware build, installs the frontend dependency tree with `npm ci --include=dev` from the committed `package-lock.json`, runs the Vite production build, and installs only the generated `dist/` contents into:
 
@@ -36,6 +37,11 @@ git submodule update --init \
   sources/proaudio-player-webui
 ```
 
-For active development, the matching branches are currently `proaudio-player-native/dev` and `proaudio-player-webui/newui`. Once a tested revision is selected for a firmware build, update the firmware gitlinks so the exact native and Web UI commits remain reproducible.
+For active development, `./scripts/sync-dev-submodules.sh` follows
+`proaudio-player-native/dev` and `proaudio-player-webui/dev`. It checks local changes
+and commits outside `origin/dev` before updating any checkout. Once a tested
+revision is selected for a firmware build, update the firmware gitlinks so the
+exact native and Web UI commits remain reproducible. To build those recorded
+revisions without following newer `dev` commits, use `./scripts/build.sh --no-submodules`.
 
 `package-lock.json` is mandatory while `BR2_PACKAGE_PROAUDIO_WEBUI=y`; the Buildroot package fails early if the lockfile is missing rather than silently falling back to a non-reproducible `npm install`.

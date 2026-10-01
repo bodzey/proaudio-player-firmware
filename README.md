@@ -6,15 +6,13 @@ The production hardware target of this repository is currently Raspberry Pi 4 Mo
 
 ## Repository model
 
-```text
-proaudio-player-native
-    native Rust control plane
-            │
-            ├────────────────────┐
-            ▼                    ▼
-proaudio_player_docker     proaudio-player-firmware
-Docker dev/test            Buildroot / Raspberry Pi 4 Model B
-```
+| Repository | Responsibility |
+| --- | --- |
+| `proaudio-player-native` | Rust control plane, audio policy, API and factory announcement media |
+| `proaudio-player-webui` | Browser frontend consuming the native API |
+| `proaudio-player-android-app` | Android client consuming the native API |
+| `proaudio-player-docker` | Portable Linux container integration with pinned native and WebUI sources |
+| `proaudio-player-firmware` | Buildroot toolchain, board profiles, storage and embedded system services |
 
 This repository contains the embedded platform layer only. The native player
 and its factory announcement media are provided by the
@@ -27,6 +25,10 @@ Branch pairing is explicit:
   native and Web UI before every build;
 - Buildroot always remains at the exact gitlink revision recorded by firmware,
   so updating application sources cannot silently change the toolchain.
+
+Source synchronization checks both application checkouts before updating them.
+Local edits, untracked files and commits outside `origin/dev` stop synchronization.
+Use `./scripts/build.sh --no-submodules` to build the recorded application revisions.
 
 ## Raspberry Pi 4 Model B hardware profile
 
